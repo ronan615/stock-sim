@@ -11,118 +11,65 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
 
   <style>
-    :root {
-      --robinhood-green: #00da81;
-      --robinhood-dark-green: #00b368;
-      --robinhood-red: #ff5000;
-      --robinhood-light-grey: #f7f7f7;
-      --robinhood-medium-grey: #e8e8e8;
-      --robinhood-dark-grey: #4a4a4a;
-      --text-color: #2c3e50;
-      --border-color: #e0e0e0;
-      --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.05);
-      --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: var(--robinhood-light-grey);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      line-height: 1.6;
+      background-color: #f4f4f9;
+      color: #333;
     }
 
     #homepage, #stockTradingPage {
       display: none;
-      flex-grow: 1;
     }
 
     #error {
-      color: var(--robinhood-red);
-      font-weight: 600;
-      margin-top: 20px;
-      padding: 12px 20px;
-      background-color: #ffe8e8;
-      border-left: 5px solid var(--robinhood-red);
-      border-radius: 8px;
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
     }
 
     .container {
-      padding: 35px;
-      max-width: 1000px;
-      margin: 30px auto;
-      background-color: #ffffff;
-      border-radius: 16px;
-      box-shadow: var(--shadow-medium);
-      flex-grow: 1;
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
     }
 
     .nav-buttons {
-      margin: 20px 0;
+      margin-bottom: 20px;
       display: flex;
       gap: 15px;
       justify-content: center;
-      background-color: #ffffff;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
     }
 
     button {
-      padding: 12px 25px;
+      padding: 10px 20px;
       font-size: 16px;
-      font-weight: 600;
-      background-color: var(--robinhood-medium-grey);
-      color: var(--text-color);
+      background-color: #4CAF50;
+      color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      box-shadow: none;
-      text-transform: capitalize;
-      letter-spacing: 0;
+      transition: background-color 0.3s ease;
     }
 
     button:hover {
-      background-color: #d1d1d1;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: none;
+      background-color: #45a049;
     }
 
     button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .nav-buttons button {
-      background-color: var(--robinhood-medium-grey);
-      color: var(--text-color);
-    }
-
-    .nav-buttons button:hover {
-      background-color: #d1d1d1;
     }
 
     .chart-container {
       position: relative;
       width: 100%;
-      height: 380px;
-      margin-bottom: 30px;
-      background-color: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
-      padding: 20px;
+      height: 300px;
+      margin-bottom: 20px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
     }
 
     canvas {
@@ -131,183 +78,79 @@
       border-radius: 8px;
     }
 
-    h1, h2, h3, h4 {
-      color: var(--robinhood-dark-grey);
-      margin-bottom: 20px;
-      font-weight: 700;
+    h1, h2, h3 {
+      color: #333;
     }
 
     ul#stockList {
       list-style-type: none;
       padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 30px;
     }
 
     ul#stockList li {
-      margin-right: 0;
-      margin-bottom: 0;
-    }
-
-    ul#stockList button {
-      background-color: #e6f7f0;
-      color: var(--robinhood-dark-green);
-      padding: 7px 12px;
-      font-size: 14px;
-      border-radius: 20px;
-      font-weight: 500;
-      box-shadow: none;
-    }
-
-    ul#stockList button:hover {
-      background-color: #d0f0e0;
-      transform: none;
+      display: inline-block;
+      margin-right: 10px;
+      margin-bottom: 10px;
     }
 
     input[type="text"], input[type="number"] {
-      padding: 12px 15px;
+      padding: 10px;
       font-size: 16px;
-      margin: 10px 0;
-      width: calc(250px - 30px);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
+      margin: 5px;
+      width: 200px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
       box-sizing: border-box;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      background-color: #ffffff;
     }
 
     input[type="text"]:focus, input[type="number"]:focus {
-      border-color: var(--robinhood-green);
+      border-color: #4CAF50;
       outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 218, 129, 0.2);
+    }
+
+    h3, h4 {
+      margin: 5px 0;
     }
 
     h3#cashdisplay, h4#cashdisplay {
-      color: var(--robinhood-dark-green);
-      display: inline-block;
-      margin-left: 10px;
-      font-size: 1.3em;
-      font-weight: 700;
+      color: #4CAF50;
     }
 
     input[type="text"]::placeholder, input[type="number"]::placeholder {
-      color: #999;
+      color: #888;
     }
 
-    .trading-actions {
+    .nav-buttons {
       display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background-color: #fcfcfc;
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
+      justify-content: center;
+      margin-bottom: 20px;
     }
 
-    .trading-actions h2 {
-      width: 100%;
-      margin-bottom: 15px;
-    }
-
-    .trading-actions span {
-      margin-right: 20px;
-      display: flex;
-      align-items: baseline;
-      font-size: 1.1em;
-    }
-
-    .trading-actions button {
-      flex-grow: 1;
-      max-width: 150px;
+    .nav-buttons button {
+      padding: 10px 20px;
       font-size: 16px;
     }
 
-    .trading-actions button:first-of-type {
-      background-color: var(--robinhood-green);
-      color: white;
+    button:active {
+      transform: scale(0.98);
     }
 
-    .trading-actions button:first-of-type:hover {
-      background-color: var(--robinhood-dark-green);
+    input[type="number"] {
+      width: 150px;
     }
 
-    .trading-actions button:nth-of-type(2) {
-      background-color: var(--robinhood-red);
-      color: white;
+    #stockSearch {
+      margin-right: 10px;
     }
 
-    .trading-actions button:nth-of-type(2):hover {
-      background-color: #cc4000;
+    div > .chart-container {
+      max-width: 100%;
+      margin-bottom: 20px;
     }
 
-    #stockTradingPage .nav-buttons {
-      background-color: transparent;
-      box-shadow: none;
-      margin-top: 0;
-      margin-bottom: 25px;
-      padding: 0;
-      gap: 10px;
-    }
-
-    #stockTradingPage .nav-buttons button {
-      background-color: var(--robinhood-medium-grey);
-      color: var(--text-color);
-      font-size: 14px;
-      padding: 8px 15px;
-      border-radius: 6px;
-    }
-
-    #stockTradingPage .nav-buttons button:hover {
-      background-color: #d1d1d1;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 20px;
-        margin: 15px auto;
-        border-radius: 12px;
-      }
-      .nav-buttons {
-        flex-direction: column;
-        gap: 10px;
-      }
-      button {
-        width: 100%;
-        padding: 10px 15px;
-      }
-      ul#stockList {
-        justify-content: center;
-        gap: 6px;
-      }
-      input[type="text"], input[type="number"] {
-        width: 100%;
-        margin: 5px 0;
-      }
-      .trading-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-      }
-      .trading-actions span {
-        margin-right: 0;
-        margin-bottom: 10px;
-        justify-content: center;
-      }
-      .trading-actions button {
-        max-width: 100%;
-      }
-      #stockTradingPage .nav-buttons {
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      #stockTradingPage .nav-buttons button {
-        flex-grow: 1;
-        width: auto;
-      }
+    span {
+      display: inline-block;
+      margin-bottom: 15px;
     }
   </style>
 </head>
@@ -320,7 +163,7 @@
 
   <div id="homepage" class="container">
     <h1>Portfolio Overview</h1>
-    <span><h3>Cash:</h3><h3 id="cashdisplay"></h3></span>
+    <span><h3>cash:</h3><h3 id="cashdisplay"></h3></span>
     <div class="chart-container">
       <canvas id="portfolioChart"></canvas>
     </div>
@@ -348,35 +191,6 @@
       <li><button onclick="loadStock('ZM')">ZM</button></li>
       <li><button onclick="loadStock('DOCU')">DOCU</button></li>
       <li><button onclick="loadStock('ROKU')">ROKU</button></li>
-      <li><button onclick="loadStock('SOXS')">SOXS</button></li>
-      <li><button onclick="loadStock('SOXL')">SOXL</button></li>
-      <li><button onclick="loadStock('AIRO')">AIRO</button></li>
-      <li><button onclick="loadStock('SFIX')">SFIX</button></li>
-      <li><button onclick="loadStock('CHPT')">CHPT</button></li>
-      <li><button onclick="loadStock('PLTR')">PLTR</button></li>
-      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
-      <li><button onclick="loadStock('DDOG')">DDOG</button></li>
-      <li><button onclick="loadStock('CRWD')">CRWD</button></li>
-      <li><button onclick="loadStock('NET')">NET</button></li>
-      <li><button onclick="loadStock('OKTA')">OKTA</button></li>
-      <li><button onclick="loadStock('ZS')">ZS</button></li>
-      <li><button onclick="loadStock('UPST')">UPST</button></li>
-      <li><button onclick="loadStock('COIN')">COIN</button></li>
-      <li><button onclick="loadStock('RIVN')">RIVN</button></li>
-      <li><button onclick="loadStock('SPY')">SPY</button></li>
-      <li><button onclick="loadStock('QQQ')">QQQ</button></li>
-      <li><button onclick="loadStock('DIA')">DIA</button></li>
-      <li><button onclick="loadStock('IVV')">IVV</button></li>
-      <li><button onclick="loadStock('VOO')">VOO</button></li>
-      <li><button onclick="loadStock('VTI')">VTI</button></li>
-      <li><button onclick="loadStock('ARKK')">ARKK</button></li>
-      <li><button onclick="loadStock('SMH')">SMH</button></li>
-      <li><button onclick="loadStock('XLK')">XLK</button></li>
-      <li><button onclick="loadStock('GLD')">GLD</button></li>
-      <li><button onclick="loadStock('SLV')">SLV</button></li>
-      <li><button onclick="loadStock('USO')">USO</button></li>
-      <li><button onclick="loadStock('TLT')">TLT</button></li>
-      <li><button onclick="loadStock('BND')">BND</button></li>
     </ul>
 
     <input type="text" id="stockSearch" placeholder="Search stock symbol">
@@ -391,8 +205,8 @@
     <button onclick="searchStock()">Search</button>
     <p id="error"></p>
 
-    <div class="nav-buttons" style="margin-top: 20px; margin-bottom: 25px; box-shadow: none; background-color: transparent;">
-      <button onclick="changeTimeframe('live')">Live</button>
+    <div>
+      <button onclick="changeTimeframe('live')">live</button>
       <button onclick="changeTimeframe('1M')">1M</button>
       <button onclick="changeTimeframe('3M')">3M</button>
       <button onclick="changeTimeframe('6M')">6M</button>
@@ -402,9 +216,9 @@
       <button onclick="changeTimeframe('ALL')">ALL</button>
     </div>
 
-    <div class="trading-actions">
+    <div>
       <h2>Trading Actions</h2>
-      <span><h4>Cash:</h4><h4 id="cashdisplay"></h4></span>
+      <span><h4>cash:</h3><h4 id="cashdisplay"></h4></span>
       <input type="number" id="buyAmount" placeholder="Amount to Buy">
       <button onclick="buyStock()">Buy</button>
       <input type="number" id="sellAmount" placeholder="Amount to Sell">
@@ -465,7 +279,7 @@
           labels: [],
           datasets: [{
             data: [],
-            backgroundColor: ['#00da81', '#007bff', '#ffc107', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#dc3545', '#343a40']
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
           }]
         },
         options: {
@@ -476,6 +290,7 @@
     }
 
     async function fetchStockData() {
+      console.log("fetchStockData() ran")
       const apiUrl = `https://ronanapis.us/apis/stockapi/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
       try {
         const response = await fetch(apiUrl);
@@ -496,15 +311,19 @@
       }
     }
     async function fetchStockDatalive() {
+      console.log("fetchStockDatalive() ran")
       const apiUrl = `https://ronanapis.us/apis/stockapi/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
         try {
         const response = await fetch(apiUrl);
+        console.log(response)
+        console.log("response logged")
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
+        console.log(data.chart.result)
         document.getElementById('error').textContent = '';
       } catch (error) {
         document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. or the server is rebooting. please come back in 30 seconds`;
@@ -534,6 +353,7 @@
           resetChart();
           
         liveinterval=setInterval(fetchStockDatalive, 1000)
+        console.log("interval set for live")
       }
       else if (newTimeframe != "live"){
       timeframe = newTimeframe;
