@@ -1,15 +1,15 @@
-import dotenv from 'dotenv';
+const dotenv = require('dotenv');
 dotenv.config();
-import express from 'express';
-import fetch from 'node-fetch';
-import cors from 'cors';
-import fs from 'fs';
+const express = require('express');
+const fetch = require('node-fetch');
+const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 5001;
 
 app.use(cors());
-app.use(express.json()); 
+app.use(express.json());
 
 const ordersFile = 'limitOrders.json';
 
@@ -18,10 +18,10 @@ const loadLimitOrders = () => {
     const data = fs.readFileSync(ordersFile);
     return JSON.parse(data);
   } catch (error) {
+    console.error('Error loading limit orders:', error); // Added error logging
     return [];
   }
 };
-
 
 const saveLimitOrders = () => {
   fs.writeFileSync(ordersFile, JSON.stringify(limitOrders, null, 2));
@@ -30,12 +30,12 @@ const saveLimitOrders = () => {
 let limitOrders = loadLimitOrders();
 
 app.get('/', (req, res) => {
-  res.send('Welcome to the Stock api');
+  res.send('Welcome to the Stock API');
 });
 
 app.get('/stock-data', async (req, res) => {
-  const symbol = req.query.symbol || 'AAPL'; 
-  const timeframe = req.query.timeframe || 'ALL'; 
+  const symbol = req.query.symbol || 'AAPL';
+  const timeframe = req.query.timeframe || 'ALL';
 
   let range;
   switch (timeframe) {
@@ -96,17 +96,24 @@ const checkLimitOrders = async () => {
     const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${order.symbol}?region=US&lang=en-US&includePrePost=false&interval=1d&range=1d`;
     try {
       const response = await fetch(yahooApiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        console.warn(`Failed to fetch data for ${order.symbol}: HTTP status ${response.status}`);
+        continue;
+      }
       const data = await response.json();
       const currentPrice = data.chart?.result?.[0]?.meta?.regularMarketPrice;
 
-      if (currentPrice !== undefined && ((order.type === 'buy' && currentPrice <= order.limitPrice) || (order.type === 'sell' && currentPrice >= order.limitPrice))) {
-        console.log(`Executing ${order.type} order for ${order.symbol} at $${currentPrice}`);
-        limitOrders.splice(i, 1);
-        saveLimitOrders();
+      if (currentPrice !== undefined) {
+        if ((order.type === 'buy' && currentPrice <= order.limitPrice) || (order.type === 'sell' && currentPrice >= order.limitPrice)) {
+          console.log(`Executing ${order.type} order for ${order.symbol} at $${currentPrice}`);
+          limitOrders.splice(i, 1);
+          saveLimitOrders();
+        }
+      } else {
+        console.warn(`Current price for ${order.symbol} is undefined.`);
       }
     } catch (error) {
-      console.error('Error fetching stock data:', error);
+      console.error(`Error checking limit order for ${order.symbol}:`, error);
     }
   }
 };
