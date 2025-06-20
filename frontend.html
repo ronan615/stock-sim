@@ -6,23 +6,18 @@
   <title>Investment Portfolio and Stock Trading</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    if (typeof eruda !== 'undefined') {
-      eruda.init();
-    }
-  </script>
+  
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
 
   <style>
     :root {
-      --robinhood-green: #00da81;
-      --robinhood-dark-green: #00b368;
-      --robinhood-red: #ff5000;
-      --robinhood-light-grey: #f7f7f7;
-      --robinhood-medium-grey: #e8e8e8;
-      --robinhood-dark-grey: #4a4a4a;
+      --primary-green: #00da81;
+      --darker-green: #00b368;
+      --primary-red: #ff5000;
+      --light-grey: #f7f7f7;
+      --medium-grey: #e8e8e8;
+      --dark-grey: #4a4a4a;
       --text-color: #2c3e50;
       --border-color: #e0e0e0;
       --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -33,7 +28,7 @@
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: var(--robinhood-light-grey);
+      background-color: var(--light-grey);
       color: var(--text-color);
       display: flex;
       flex-direction: column;
@@ -47,14 +42,14 @@
     }
 
     #error {
-      color: var(--robinhood-red);
+      color: var(--primary-red);
       font-weight: 600;
       margin-top: 20px;
       padding: 12px 20px;
       background-color: #ffe8e8;
-      border-left: 5px solid var(--robinhood-red);
+      border-left: 5px solid var(--primary-red);
       border-radius: 8px;
-      display: none; /* Hidden by default */
+      display: none;
     }
 
     .container {
@@ -82,7 +77,7 @@
       padding: 12px 25px;
       font-size: 16px;
       font-weight: 600;
-      background-color: var(--robinhood-medium-grey);
+      background-color: var(--medium-grey);
       color: var(--text-color);
       border: none;
       border-radius: 8px;
@@ -111,7 +106,7 @@
     }
 
     .nav-buttons button {
-      background-color: var(--robinhood-medium-grey);
+      background-color: var(--medium-grey);
       color: var(--text-color);
     }
 
@@ -138,7 +133,7 @@
     }
 
     h1, h2, h3, h4 {
-      color: var(--robinhood-dark-grey);
+      color: var(--dark-grey);
       margin-bottom: 20px;
       font-weight: 700;
     }
@@ -154,7 +149,7 @@
     
     ul#stockList button {
       background-color: #e6f7f0;
-      color: var(--robinhood-dark-green);
+      color: var(--darker-green);
       padding: 7px 12px;
       font-size: 14px;
       border-radius: 20px;
@@ -180,13 +175,13 @@
     }
 
     input[type="text"]:focus, input[type="number"]:focus {
-      border-color: var(--robinhood-green);
+      border-color: var(--primary-green);
       outline: none;
       box-shadow: 0 0 0 3px rgba(0, 218, 129, 0.2);
     }
 
     h3#cashdisplay, h4#cashdisplay {
-      color: var(--robinhood-dark-green);
+      color: var(--darker-green);
       display: inline-block;
       margin-left: 10px;
       font-size: 1.3em;
@@ -228,16 +223,16 @@
     }
 
     .trading-actions button:first-of-type {
-      background-color: var(--robinhood-green);
+      background-color: var(--primary-green);
       color: white;
     }
 
     .trading-actions button:first-of-type:hover {
-      background-color: var(--robinhood-dark-green);
+      background-color: var(--darker-green);
     }
 
     .trading-actions button:nth-of-type(2) {
-      background-color: var(--robinhood-red);
+      background-color: var(--primary-red);
       color: white;
     }
 
@@ -255,7 +250,7 @@
     }
 
     #stockTradingPage .nav-buttons button {
-      background-color: var(--robinhood-medium-grey);
+      background-color: var(--medium-grey);
       color: var(--text-color);
       font-size: 14px;
       padding: 8px 15px;
@@ -314,7 +309,7 @@
     .stock-category-heading {
       margin-top: 25px;
       margin-bottom: 15px;
-      color: var(--robinhood-dark-grey);
+      color: var(--dark-grey);
       font-weight: 600;
       font-size: 1.2em;
       border-bottom: 1px solid var(--border-color);
@@ -467,14 +462,41 @@
     let timeframe = 'ALL';
     const ctx = document.getElementById('stockChart').getContext('2d');
     const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
-    let cash = 100000;
-    document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
+    let cash = 0;
     let portfolio = {};
+    let userId = localStorage.getItem('stockAppUserId'); // Retrieve user ID from local storage
+
+    // Generate a unique user ID if one doesn't exist
+    if (!userId) {
+      userId = crypto.randomUUID(); // Generate a UUID
+      localStorage.setItem('stockAppUserId', userId); // Store it in local storage
+    }
+    console.log('User ID:', userId); // Log user ID for debugging
+
+    async function fetchUserData() {
+        try {
+            const response = await fetch('http://localhost:5001/api/user-data', {
+                headers: {
+                    'X-User-Id': userId // Send user ID in a custom header
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            cash = data.cash;
+            portfolio = data.portfolio;
+            document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
+            updatePortfolioChart();
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            showModal('Error fetching user data: ' + error.message);
+        }
+    }
 
     function createStockChart() {
-      // Get colors from CSS variables to use in JavaScript for chart styling
-      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-green');
-      const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-red');
+      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
+      const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-red');
 
       stockChart = new Chart(ctx, {
         type: 'line',
@@ -528,9 +550,7 @@
                   displayColors: false,
                   callbacks: {
                       title: function(tooltipItems) {
-                          // Use parsed.x for the timestamp, which is reliably a number (milliseconds)
                           const timestamp = tooltipItems[0].parsed.x; 
-                          // Convert timestamp to Luxon DateTime object and format
                           return luxon.DateTime.fromMillis(timestamp).toLocaleString(luxon.DateTime.DATETIME_SHORT);
                       },
                       label: function(context) {
@@ -558,7 +578,7 @@
                   drawBorder: false
               },
               ticks: {
-                  color: 'var(--robinhood-dark-grey)',
+                  color: 'var(--dark-grey)',
                   font: { size: 10 }
               }
             },
@@ -570,7 +590,7 @@
                   borderDash: [2, 2]
               },
               ticks: {
-                  color: 'var(--robinhood-dark-grey)',
+                  color: 'var(--dark-grey)',
                   font: { size: 10 },
                   callback: function(value, index, values) {
                       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -645,7 +665,7 @@
     }
 
     async function fetchStockData() {
-      const apiUrl = `https://stockapi.ronanapis.us/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+      const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -668,7 +688,7 @@
     }
 
     async function fetchStockDatalive() {
-      const apiUrl = `https://stockapi.ronanapis.us/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+      const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -729,53 +749,82 @@
       createStockChart();
     }
 
-    function buyStock() {
+    async function buyStock() {
       const amount = parseFloat(document.getElementById('buyAmount').value);
       if (isNaN(amount) || amount <= 0) {
         showModal('Invalid amount. Please enter a positive number.');
         return;
       }
 
-      const price = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-      if (!price) {
+      const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
+      if (!currentPrice) {
         showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
         return;
       }
 
-      const totalCost = amount * price;
-      if (cash >= totalCost) {
-        cash -= totalCost;
-        document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
-        portfolio[stockSymbol] = (portfolio[stockSymbol] || 0) + amount;
-        updatePortfolioChart();
-        showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
-      } else {
-        showModal('Insufficient cash. You do not have enough funds to complete this purchase.');
+      try {
+          const response = await fetch('http://localhost:5001/api/buy-stock', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-User-Id': userId // Send user ID
+              },
+              body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+              cash = result.cash;
+              portfolio = result.portfolio;
+              document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
+              updatePortfolioChart();
+              showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
+          } else {
+              showModal('Purchase failed: ' + result.error);
+          }
+      } catch (error) {
+          console.error('Error buying stock:', error);
+          showModal('Error communicating with server: ' + error.message);
       }
     }
 
-    function sellStock() {
+    async function sellStock() {
       const amount = parseFloat(document.getElementById('sellAmount').value);
-      if (isNaN(amount) || amount <= 0 || !portfolio[stockSymbol] || portfolio[stockSymbol] < amount) {
-        showModal('Invalid amount or insufficient stock. Please enter a positive number and ensure you own enough shares.');
+      if (isNaN(amount) || amount <= 0) {
+        showModal('Invalid amount. Please enter a positive number.');
         return;
       }
 
-      const price = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-      if (!price) {
+      const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
+      if (!currentPrice) {
         showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
         return;
       }
 
-      const totalRevenue = amount * price;
-      cash += totalRevenue;
-      portfolio[stockSymbol] -= amount;
-      if (portfolio[stockSymbol] <= 0.001) {
-        delete portfolio[stockSymbol];
+      try {
+          const response = await fetch('http://localhost:5001/api/sell-stock', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-User-Id': userId // Send user ID
+              },
+              body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+              cash = result.cash;
+              portfolio = result.portfolio;
+              document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
+              updatePortfolioChart();
+              showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
+          } else {
+              showModal('Sale failed: ' + result.error);
+          }
+      } catch (error) {
+          console.error('Error selling stock:', error);
+          showModal('Error communicating with server: ' + error.message);
       }
-      updatePortfolioChart();
-      showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
-      document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
     }
 
     function updatePortfolioChart() {
@@ -800,9 +849,11 @@
     function showSection(sectionId) {
       document.getElementById('homepage').style.display = sectionId === 'homepage' ? 'block' : 'none';
       document.getElementById('stockTradingPage').style.display = sectionId === 'stockTradingPage' ? 'block' : 'none';
-      if (sectionId === 'homepage' && !portfolioChart) {
-        createPortfolioChart();
-        updatePortfolioChart();
+      if (sectionId === 'homepage') {
+        fetchUserData(); 
+        if (!portfolioChart) {
+          createPortfolioChart();
+        }
       }
     }
 
@@ -836,7 +887,7 @@
       const closeButton = document.createElement('button');
       closeButton.textContent = 'OK';
       closeButton.style.cssText = `
-        background-color: var(--robinhood-green);
+        background-color: var(--primary-green);
         color: white;
         padding: 10px 20px;
         border: none;
@@ -845,8 +896,8 @@
         font-size: 1em;
         transition: background-color 0.2s ease;
       `;
-      closeButton.onmouseover = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-dark-green');
-      closeButton.onmouseout = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-green');
+      closeButton.onmouseover = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--darker-green');
+      closeButton.onmouseout = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
       closeButton.onclick = () => {
         document.body.removeChild(modal);
         document.body.removeChild(overlay);
@@ -873,11 +924,10 @@
       document.body.appendChild(modal);
     }
 
-
-    showSection('homepage');
     createStockChart();
     createPortfolioChart();
-
+    fetchUserData();
+    showSection('homepage');
     loadStock('AAPL'); 
   </script>
 </body>
