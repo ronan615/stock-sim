@@ -7,6 +7,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    if (typeof eruda !== 'undefined') {
+      eruda.init();
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
 
@@ -49,6 +54,7 @@
       background-color: #ffe8e8;
       border-left: 5px solid var(--robinhood-red);
       border-radius: 8px;
+      display: none; /* Hidden by default */
     }
 
     .container {
@@ -145,12 +151,7 @@
       gap: 8px;
       margin-bottom: 30px;
     }
-
-    ul#stockList li {
-      margin-right: 0;
-      margin-bottom: 0;
-    }
-
+    
     ul#stockList button {
       background-color: #e6f7f0;
       color: var(--robinhood-dark-green);
@@ -309,9 +310,28 @@
         width: auto;
       }
     }
+    
+    .stock-category-heading {
+      margin-top: 25px;
+      margin-bottom: 15px;
+      color: var(--robinhood-dark-grey);
+      font-weight: 600;
+      font-size: 1.2em;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 5px;
+    }
+
+    .stock-category-list {
+      list-style-type: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
-<body onload="eruda.init()">
+<body>
 
   <div class="nav-buttons">
     <button onclick="showSection('homepage')">Home</button>
@@ -326,10 +346,11 @@
     </div>
     
     <h2>Top Stocks</h2>
-    <ul id="stockList">
+    
+    <h3 class="stock-category-heading">Technology & Growth Stocks</h3>
+    <ul class="stock-category-list">
       <li><button onclick="loadStock('AAPL')">AAPL</button></li>
       <li><button onclick="loadStock('NVDA')">NVDA</button></li>
-      <li><button onclick="loadStock('TSLA')">TSLA</button></li>
       <li><button onclick="loadStock('AMZN')">AMZN</button></li>
       <li><button onclick="loadStock('GOOGL')">GOOGL</button></li>
       <li><button onclick="loadStock('MSFT')">MSFT</button></li>
@@ -342,27 +363,29 @@
       <li><button onclick="loadStock('QCOM')">QCOM</button></li>
       <li><button onclick="loadStock('AMD')">AMD</button></li>
       <li><button onclick="loadStock('SQ')">SQ</button></li>
-      <li><button onclick="loadStock('UBER')">UBER</button></li>
-      <li><button onclick="loadStock('LYFT')">LYFT</button></li>
       <li><button onclick="loadStock('PINS')">PINS</button></li>
       <li><button onclick="loadStock('ZM')">ZM</button></li>
       <li><button onclick="loadStock('DOCU')">DOCU</button></li>
       <li><button onclick="loadStock('ROKU')">ROKU</button></li>
-      <li><button onclick="loadStock('SOXS')">SOXS</button></li>
-      <li><button onclick="loadStock('SOXL')">SOXL</button></li>
-      <li><button onclick="loadStock('AIRO')">AIRO</button></li>
-      <li><button onclick="loadStock('SFIX')">SFIX</button></li>
-      <li><button onclick="loadStock('CHPT')">CHPT</button></li>
-      <li><button onclick="loadStock('PLTR')">PLTR</button></li>
-      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
       <li><button onclick="loadStock('DDOG')">DDOG</button></li>
       <li><button onclick="loadStock('CRWD')">CRWD</button></li>
       <li><button onclick="loadStock('NET')">NET</button></li>
       <li><button onclick="loadStock('OKTA')">OKTA</button></li>
       <li><button onclick="loadStock('ZS')">ZS</button></li>
-      <li><button onclick="loadStock('UPST')">UPST</button></li>
-      <li><button onclick="loadStock('COIN')">COIN</button></li>
+      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
+    </ul>
+
+    <h3 class="stock-category-heading">Automotive & Mobility</h3>
+    <ul class="stock-category-list">
+      <li><button onclick="loadStock('TSLA')">TSLA</button></li>
       <li><button onclick="loadStock('RIVN')">RIVN</button></li>
+      <li><button onclick="loadStock('CHPT')">CHPT</button></li>
+      <li><button onclick="loadStock('UBER')">UBER</button></li>
+      <li><button onclick="loadStock('LYFT')">LYFT</button></li>
+    </ul>
+
+    <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
+    <ul class="stock-category-list">
       <li><button onclick="loadStock('SPY')">SPY</button></li>
       <li><button onclick="loadStock('QQQ')">QQQ</button></li>
       <li><button onclick="loadStock('DIA')">DIA</button></li>
@@ -377,6 +400,27 @@
       <li><button onclick="loadStock('USO')">USO</button></li>
       <li><button onclick="loadStock('TLT')">TLT</button></li>
       <li><button onclick="loadStock('BND')">BND</button></li>
+      <li><button onclick="loadStock('SOXS')">SOXS</button></li>
+      <li><button onclick="loadStock('SOXL')">SOXL</button></li>
+    </ul>
+
+    <h3 class="stock-category-heading">Recent IPOs</h3>
+    <ul class="stock-category-list">
+      <li><button onclick="loadStock('ARM')">ARM</button></li>
+      <li><button onclick="loadStock('HOOD')">HOOD</button></li>
+      <li><button onclick="loadStock('ABNB')">ABNB</button></li>
+      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
+      <li><button onclick="loadStock('RBLX')">RBLX</button></li>
+      <li><button onclick="loadStock('COIN')">COIN</button></li>
+      <li><button onclick="loadStock('U')">U</button></li>
+    </ul>
+
+    <h3 class="stock-category-heading">Other / Emerging Markets</h3>
+    <ul class="stock-category-list">
+      <li><button onclick="loadStock('AIRO')">AIRO</button></li>
+      <li><button onclick="loadStock('SFIX')">SFIX</button></li>
+      <li><button onclick="loadStock('PLTR')">PLTR</button></li>
+      <li><button onclick="loadStock('UPST')">UPST</button></li>
     </ul>
 
     <input type="text" id="stockSearch" placeholder="Search stock symbol">
@@ -424,7 +468,7 @@
     const ctx = document.getElementById('stockChart').getContext('2d');
     const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
     let cash = 100000;
-    document.getElementById('cashdisplay').innerHTML=cash;
+    document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
     let portfolio = {};
 
     function createStockChart() {
@@ -476,7 +520,7 @@
     }
 
     async function fetchStockData() {
-      const apiUrl = `https://ronanapis.us/apis/stockapi/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+      const apiUrl = `https://stockapi.ronanapis.us/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -487,17 +531,20 @@
         if (data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].timestamp) {
           updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
           document.getElementById('error').textContent = '';
+          document.getElementById('error').style.display = 'none'; // Hide error on success
         } else {
-          throw new Error('Invalid data format');
+          throw new Error('Invalid data format received from API');
         }
       } catch (error) {
-        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. or the server is rebooting. please come back in 30 seconds`;
-        changeTimeframe(timeframe)
+        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
+        document.getElementById('error').style.display = 'block'; // Show error on failure
+        changeTimeframe(timeframe); 
       }
     }
+
     async function fetchStockDatalive() {
-      const apiUrl = `https://ronanapis.us/apis/stockapi/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
-        try {
+      const apiUrl = `https://stockapi.ronanapis.us/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+      try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
           const errorData = await response.json();
@@ -506,9 +553,11 @@
         const data = await response.json();
         updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
         document.getElementById('error').textContent = '';
+        document.getElementById('error').style.display = 'none'; // Hide error on success
       } catch (error) {
-        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. or the server is rebooting. please come back in 30 seconds`;
-        changeTimeframe(timeframe)
+        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
+        document.getElementById('error').style.display = 'block'; // Show error on failure
+        changeTimeframe(timeframe); 
       }
     }
 
@@ -521,28 +570,30 @@
     function searchStock() {
       stockSymbol = document.getElementById('stockSymbol').value.toUpperCase();
       if (stockSymbol) {
+        document.getElementById('error').textContent = ''; // Clear error on new search
+        document.getElementById('error').style.display = 'none'; // Hide error on new search
         resetChart();
         fetchStockData();
       }
     }
 
-    var liveinterval=0;
+    let liveinterval = 0;
+
     function changeTimeframe(newTimeframe) {
-      if (newTimeframe == "live" && liveinterval == 0){
-          
-          timeframe = newTimeframe;
-          resetChart();
-          
-        liveinterval=setInterval(fetchStockDatalive, 1000)
-      }
-      else if (newTimeframe != "live"){
-      timeframe = newTimeframe;
-      
-      resetChart();
-      
-      fetchStockData();
-      clearInterval(liveinterval)
-      liveinterval=0
+      if (newTimeframe === "live" && liveinterval === 0) {
+        timeframe = newTimeframe;
+        document.getElementById('error').textContent = ''; // Clear error on timeframe change
+        document.getElementById('error').style.display = 'none'; // Hide error on timeframe change
+        resetChart();
+        liveinterval = setInterval(fetchStockDatalive, 1000);
+      } else if (newTimeframe !== "live") {
+        timeframe = newTimeframe;
+        document.getElementById('error').textContent = ''; // Clear error on timeframe change
+        document.getElementById('error').style.display = 'none'; // Hide error on timeframe change
+        resetChart();
+        fetchStockData();
+        clearInterval(liveinterval);
+        liveinterval = 0;
       }
     }
     
@@ -556,51 +607,50 @@
     function buyStock() {
       const amount = parseFloat(document.getElementById('buyAmount').value);
       if (isNaN(amount) || amount <= 0) {
-        alert('Invalid amount');
+        showModal('Invalid amount. Please enter a positive number.');
         return;
       }
 
       const price = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
       if (!price) {
-        alert('Unable to fetch current price');
+        showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
         return;
       }
 
       const totalCost = amount * price;
       if (cash >= totalCost) {
         cash -= totalCost;
-        document.getElementById('cashdisplay').innerHTML=cash;
+        document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
         portfolio[stockSymbol] = (portfolio[stockSymbol] || 0) + amount;
         updatePortfolioChart();
-        alert('Stock bought successfully. You now still have:$'+cash);
+        showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
       } else {
-        alert('Insufficient cash');
+        showModal('Insufficient cash. You do not have enough funds to complete this purchase.');
       }
     }
 
     function sellStock() {
       const amount = parseFloat(document.getElementById('sellAmount').value);
       if (isNaN(amount) || amount <= 0 || !portfolio[stockSymbol] || portfolio[stockSymbol] < amount) {
-        alert('Invalid amount or insufficient stock');
+        showModal('Invalid amount or insufficient stock. Please enter a positive number and ensure you own enough shares.');
         return;
       }
 
       const price = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
       if (!price) {
-        alert('Unable to fetch current price');
+        showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
         return;
       }
 
       const totalRevenue = amount * price;
       cash += totalRevenue;
       portfolio[stockSymbol] -= amount;
-      if (portfolio[stockSymbol] === 0) {
+      if (portfolio[stockSymbol] <= 0.001) {
         delete portfolio[stockSymbol];
       }
       updatePortfolioChart();
-      alert('Stock sold successfully. You now have:'+cash);
-        document.getElementById('cashdisplay').innerHTML=cash;
-      
+      showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
+      document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
     }
 
     function updatePortfolioChart() {
@@ -613,8 +663,11 @@
 
     function loadStock(stock) {
       stockSymbol = stock;
-      document.getElementById('cashdisplay').innerHTML=cash;
+      document.getElementById('stockSymbol').value = stock;
+      document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
       showSection('stockTradingPage');
+      document.getElementById('error').textContent = ''; // Clear error on load stock
+      document.getElementById('error').style.display = 'none'; // Hide error on load stock
       resetChart();
       fetchStockData();
     }
@@ -627,12 +680,80 @@
         updatePortfolioChart();
       }
     }
-    function searchStockmainpage(){
-        loadStock(document.getElementById("stockSearch").value)
+
+    function searchStockmainpage() {
+      loadStock(document.getElementById("stockSearch").value.toUpperCase());
     }
+
+    function showModal(message) {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        text-align: center;
+        max-width: 90%;
+        font-family: 'Inter', sans-serif;
+      `;
+
+      const messagePara = document.createElement('p');
+      messagePara.textContent = message;
+      messagePara.style.marginBottom = '20px';
+      messagePara.style.fontSize = '1.1em';
+      messagePara.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color'); 
+
+      const closeButton = document.createElement('button');
+      closeButton.textContent = 'OK';
+      closeButton.style.cssText = `
+        background-color: var(--robinhood-green);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.2s ease;
+      `;
+      closeButton.onmouseover = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-dark-green');
+      closeButton.onmouseout = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-green');
+      closeButton.onclick = () => {
+        document.body.removeChild(modal);
+        document.body.removeChild(overlay);
+      };
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      `;
+      overlay.onclick = () => {
+        document.body.removeChild(modal);
+        document.body.removeChild(overlay);
+      };
+
+      modal.appendChild(messagePara);
+      modal.appendChild(closeButton);
+      document.body.appendChild(overlay);
+      document.body.appendChild(modal);
+    }
+
+
     showSection('homepage');
     createStockChart();
     createPortfolioChart();
+
+    loadStock('AAPL'); 
   </script>
 </body>
 </html>
