@@ -472,6 +472,10 @@
     let portfolio = {};
 
     function createStockChart() {
+      // Get colors from CSS variables to use in JavaScript for chart styling
+      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-green');
+      const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--robinhood-red');
+
       stockChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -479,23 +483,99 @@
           datasets: [{
             label: stockSymbol,
             data: [],
-            borderColor: 'rgba(75, 192, 192, 1)',
+            borderColor: primaryColor,
             borderWidth: 2,
-            fill: false
+            fill: {
+                target: 'origin',
+                above: (context) => {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, `${primaryColor}00`);
+                    gradient.addColorStop(0.5, `${primaryColor}40`);
+                    gradient.addColorStop(1, `${primaryColor}80`);
+                    return gradient;
+                },
+                below: `${negativeColor}40`
+            },
+            pointRadius: 0,
+            pointHitRadius: 10,
+            pointHoverRadius: 5,
+            pointBackgroundColor: primaryColor,
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            tension: 0.1
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          plugins: {
+              legend: {
+                  display: false
+              },
+              tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  titleFont: { size: 14, weight: 'bold' },
+                  bodyFont: { size: 12 },
+                  padding: 10,
+                  caretSize: 5,
+                  cornerRadius: 8,
+                  displayColors: false,
+                  callbacks: {
+                      title: function(tooltipItems) {
+                          // Use parsed.x for the timestamp, which is reliably a number (milliseconds)
+                          const timestamp = tooltipItems[0].parsed.x; 
+                          // Convert timestamp to Luxon DateTime object and format
+                          return luxon.DateTime.fromMillis(timestamp).toLocaleString(luxon.DateTime.DATETIME_SHORT);
+                      },
+                      label: function(context) {
+                          let label = context.dataset.label || '';
+                          if (label) {
+                              label += ': ';
+                          }
+                          if (context.parsed.y !== null) {
+                              label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                          }
+                          return label;
+                      }
+                  }
+              }
+          },
           scales: {
             x: {
               type: 'time',
               time: {
-                unit: 'day'
+                unit: 'day',
+                tooltipFormat: 'MMM dd,yyyy HH:mm'
+              },
+              grid: {
+                  display: false,
+                  drawBorder: false
+              },
+              ticks: {
+                  color: 'var(--robinhood-dark-grey)',
+                  font: { size: 10 }
               }
             },
             y: {
-              beginAtZero: false
+              beginAtZero: false,
+              grid: {
+                  color: 'var(--border-color)',
+                  drawBorder: false,
+                  borderDash: [2, 2]
+              },
+              ticks: {
+                  color: 'var(--robinhood-dark-grey)',
+                  font: { size: 10 },
+                  callback: function(value, index, values) {
+                      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+                  }
+              }
             }
           }
         }
@@ -509,12 +589,57 @@
           labels: [],
           datasets: [{
             data: [],
-            backgroundColor: ['#00da81', '#007bff', '#ffc107', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#dc3545', '#343a40']
+            backgroundColor: ['#00da81', '#007bff', '#ffc107', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#dc3545', '#343a40'],
+            borderColor: 'white',
+            borderWidth: 2
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false
+          maintainAspectRatio: false,
+          plugins: {
+              legend: {
+                  position: 'right',
+                  labels: {
+                      font: {
+                          size: 14
+                      },
+                      color: 'var(--text-color)',
+                      boxWidth: 20,
+                      padding: 15
+                  }
+              },
+              tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  titleFont: { size: 14, weight: 'bold' },
+                  bodyFont: { size: 12 },
+                  padding: 10,
+                  caretSize: 5,
+                  cornerRadius: 8,
+                  callbacks: {
+                      label: function(context) {
+                          let label = context.label || '';
+                          if (label) {
+                              label += ': ';
+                          }
+                          if (context.parsed !== null) {
+                              const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                              const percentage = (context.parsed / total * 100).toFixed(2);
+                              label += new Intl.NumberFormat('en-US').format(context.parsed) + ` (${percentage}%)`;
+                          }
+                          return label;
+                      }
+                  }
+              }
+          },
+          layout: {
+              padding: {
+                  left: 0,
+                  right: 50,
+                  top: 0,
+                  bottom: 0
+              }
+          }
         }
       });
     }
@@ -531,13 +656,13 @@
         if (data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].timestamp) {
           updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
           document.getElementById('error').textContent = '';
-          document.getElementById('error').style.display = 'none'; // Hide error on success
+          document.getElementById('error').style.display = 'none';
         } else {
           throw new Error('Invalid data format received from API');
         }
       } catch (error) {
         document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
-        document.getElementById('error').style.display = 'block'; // Show error on failure
+        document.getElementById('error').style.display = 'block';
         changeTimeframe(timeframe); 
       }
     }
@@ -553,10 +678,10 @@
         const data = await response.json();
         updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
         document.getElementById('error').textContent = '';
-        document.getElementById('error').style.display = 'none'; // Hide error on success
+        document.getElementById('error').style.display = 'none';
       } catch (error) {
         document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
-        document.getElementById('error').style.display = 'block'; // Show error on failure
+        document.getElementById('error').style.display = 'block';
         changeTimeframe(timeframe); 
       }
     }
@@ -570,8 +695,8 @@
     function searchStock() {
       stockSymbol = document.getElementById('stockSymbol').value.toUpperCase();
       if (stockSymbol) {
-        document.getElementById('error').textContent = ''; // Clear error on new search
-        document.getElementById('error').style.display = 'none'; // Hide error on new search
+        document.getElementById('error').textContent = '';
+        document.getElementById('error').style.display = 'none';
         resetChart();
         fetchStockData();
       }
@@ -582,14 +707,14 @@
     function changeTimeframe(newTimeframe) {
       if (newTimeframe === "live" && liveinterval === 0) {
         timeframe = newTimeframe;
-        document.getElementById('error').textContent = ''; // Clear error on timeframe change
-        document.getElementById('error').style.display = 'none'; // Hide error on timeframe change
+        document.getElementById('error').textContent = '';
+        document.getElementById('error').style.display = 'none';
         resetChart();
         liveinterval = setInterval(fetchStockDatalive, 1000);
       } else if (newTimeframe !== "live") {
         timeframe = newTimeframe;
-        document.getElementById('error').textContent = ''; // Clear error on timeframe change
-        document.getElementById('error').style.display = 'none'; // Hide error on timeframe change
+        document.getElementById('error').textContent = '';
+        document.getElementById('error').style.display = 'none';
         resetChart();
         fetchStockData();
         clearInterval(liveinterval);
@@ -666,8 +791,8 @@
       document.getElementById('stockSymbol').value = stock;
       document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
       showSection('stockTradingPage');
-      document.getElementById('error').textContent = ''; // Clear error on load stock
-      document.getElementById('error').style.display = 'none'; // Hide error on load stock
+      document.getElementById('error').textContent = '';
+      document.getElementById('error').style.display = 'none';
       resetChart();
       fetchStockData();
     }
