@@ -16,6 +16,7 @@ const ordersFile = 'limitOrders.json';
 const usersDataFile = 'usersData.json';
 
 let allUsersData = {};
+let stockPricesCache = {};
 
 const loadAllUsersData = () => {
     try {
@@ -84,20 +85,34 @@ const getUserId = (req) => {
     return req.headers['x-user-id'];
 };
 
+const getUserName = (req) => {
+    return req.headers['x-user-name'];
+};
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend.html'));
 });
 
 app.get('/api/user-data', (req, res) => {
     const userId = getUserId(req);
+    const userName = getUserName(req);
+
     if (!userId) {
         return res.status(400).json({ error: 'User ID missing in headers.' });
     }
 
     if (!allUsersData[userId]) {
-        allUsersData[userId] = { cash: 100000, portfolio: {} };
+        allUsersData[userId] = {
+            cash: 100000,
+            portfolio: {},
+            username: userName || `User-${userId.substring(0, 4)}`
+        };
         saveAllUsersData();
-        console.log(`Initialized new user data for userId: ${userId}`);
+        console.log(`Initialized new user data for userId: ${userId} with username: ${allUsersData[userId].username}`);
+    } else if (userName && allUsersData[userId].username !== userName) {
+        allUsersData[userId].username = userName;
+        saveAllUsersData();
+        console.log(`Updated username for userId: ${userId} to ${userName}`);
     }
 
     res.json(allUsersData[userId]);
@@ -206,6 +221,11 @@ app.get('/stock-data', async (req, res) => {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        const currentPrice = data.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (currentPrice !== undefined) {
+            stockPricesCache[symbol] = { price: currentPrice, lastUpdated: Date.now() };
+        }
+
         if (data.chart?.result?.[0]?.meta) {
             res.json(data);
         } else {
@@ -216,6 +236,57 @@ app.get('/stock-data', async (req, res) => {
         res.status(500).json({ error: error.message || 'Error fetching stock data' });
     }
 });
+
+app.get('/api/leaderboard', async (req, res) => {
+    const leaderboard = [];
+    const symbolsToFetch = new Set();
+
+    for (const userId in allUsersData) {
+        for (const symbol in allUsersData[userId].portfolio) {
+            symbolsToFetch.add(symbol);
+        }
+    }
+
+    const fetchPromises = Array.from(symbolsToFetch).map(async (symbol) => {
+        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?region=US&lang=en-US&includePrePost=false&interval=1d&range=1d`;
+        try {
+            const response = await fetch(yahooApiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+            if (response.ok) {
+                const data = await response.json();
+                const currentPrice = data.chart?.result?.[0]?.meta?.regularMarketPrice;
+                if (currentPrice !== undefined) {
+                    stockPricesCache[symbol] = { price: currentPrice, lastUpdated: Date.now() };
+                }
+            } else {
+                console.warn(`Failed to fetch fresh price for ${symbol} for leaderboard: HTTP status ${response.status}`);
+            }
+        } catch (error) {
+            console.error(`Error fetching fresh price for ${symbol} for leaderboard:`, error);
+        }
+    });
+
+    await Promise.all(fetchPromises);
+
+    for (const userId in allUsersData) {
+        const user = allUsersData[userId];
+        let netWorth = user.cash;
+        for (const symbol in user.portfolio) {
+            const quantity = user.portfolio[symbol];
+            const cachedPrice = stockPricesCache[symbol]?.price;
+            if (cachedPrice !== undefined) {
+                netWorth += quantity * cachedPrice;
+            } else {
+                console.warn(`Price for ${symbol} not found in cache for user ${user.username} (${userId}). Using 0 for calculation.`);
+            }
+        }
+        leaderboard.push({ username: user.username, netWorth: netWorth });
+    }
+
+    leaderboard.sort((a, b) => b.netWorth - a.netWorth);
+
+    res.json(leaderboard);
+});
+
 
 const checkLimitOrders = async () => {
     for (let i = limitOrders.length - 1; i >= 0; i--) {
@@ -231,6 +302,7 @@ const checkLimitOrders = async () => {
             const currentPrice = data.chart?.result?.[0]?.meta?.regularMarketPrice;
 
             if (currentPrice !== undefined) {
+                stockPricesCache[order.symbol] = { price: currentPrice, lastUpdated: Date.now() };
                 if (!allUsersData[order.userId]) {
                     console.warn(`User data not found for userId: ${order.userId} for limit order. Skipping.`);
                     limitOrders.splice(i, 1);

@@ -1,934 +1,1279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investment Portfolio and Stock Trading</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Portfolio & Stock Trading</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --primary-green: #00da81;
-      --darker-green: #00b368;
-      --primary-red: #ff5000;
-      --light-grey: #f7f7f7;
-      --medium-grey: #e8e8e8;
-      --dark-grey: #4a4a4a;
-      --text-color: #2c3e50;
-      --border-color: #e0e0e0;
-      --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.05);
-      --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
 
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--light-grey);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      line-height: 1.6;
-    }
+    <style>
+        :root {
+            --primary-green: #00b894;
+            --darker-green: #00967d;
+            --primary-red: #d63031;
+            --light-grey: #f8f9fa;
+            --medium-grey: #e9ecef;
+            --dark-grey: #343a40;
+            --text-color: #495057;
+            --border-color: #dee2e6;
+            --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.04);
+            --shadow-medium: 0 8px 20px rgba(0, 0, 0, 0.08);
+            --white: #ffffff;
+            --gradient-start: rgba(0, 184, 148, 0.6);
+            --gradient-end: rgba(0, 184, 148, 0);
+            --red-gradient-start: rgba(214, 48, 49, 0.6);
+            --red-gradient-end: rgba(214, 48, 49, 0);
+        }
 
-    #homepage, #stockTradingPage {
-      display: none;
-      flex-grow: 1;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-grey);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
-    #error {
-      color: var(--primary-red);
-      font-weight: 600;
-      margin-top: 20px;
-      padding: 12px 20px;
-      background-color: #ffe8e8;
-      border-left: 5px solid var(--primary-red);
-      border-radius: 8px;
-      display: none;
-    }
+        #homepage, #stockTradingPage, #leaderboardPage {
+            display: none;
+            flex-grow: 1;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
 
-    .container {
-      padding: 35px;
-      max-width: 1000px;
-      margin: 30px auto;
-      background-color: #ffffff;
-      border-radius: 16px;
-      box-shadow: var(--shadow-medium);
-      flex-grow: 1;
-    }
+        #homepage.active, #stockTradingPage.active, #leaderboardPage.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-    .nav-buttons {
-      margin: 20px 0;
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      background-color: #ffffff;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
-    }
+        .container {
+            padding: 30px;
+            max-width: 1100px;
+            margin: 25px auto;
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-medium);
+            flex-grow: 1;
+            transition: all 0.3s ease-in-out;
+        }
 
-    button {
-      padding: 12px 25px;
-      font-size: 16px;
-      font-weight: 600;
-      background-color: var(--medium-grey);
-      color: var(--text-color);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      box-shadow: none;
-      text-transform: capitalize;
-      letter-spacing: 0;
-    }
+        .section-heading {
+            color: var(--dark-grey);
+            margin-bottom: 25px;
+            font-weight: 700;
+            font-size: 2.2em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
 
-    button:hover {
-      background-color: #d1d1d1;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
+        .nav-buttons {
+            margin: 20px auto;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            background-color: var(--white);
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+            max-width: fit-content;
+        }
 
-    button:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
+        .nav-buttons button {
+            background-color: var(--medium-grey);
+            color: var(--text-color);
+            padding: 10px 22px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
+        .nav-buttons button:hover {
+            background-color: #d1d1d1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
 
-    .nav-buttons button {
-      background-color: var(--medium-grey);
-      color: var(--text-color);
-    }
+        .nav-buttons button.active {
+            background-color: var(--primary-green);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 184, 148, 0.2);
+        }
 
-    .nav-buttons button:hover {
-      background-color: #d1d1d1;
-    }
+        .nav-buttons button.active:hover {
+            background-color: var(--darker-green);
+        }
 
-    .chart-container {
-      position: relative;
-      width: 100%;
-      height: 380px;
-      margin-bottom: 30px;
-      background-color: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
-      padding: 20px;
-    }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            background-color: var(--medium-grey);
+            color: var(--text-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: none;
+            text-transform: capitalize;
+            letter-spacing: 0;
+            min-width: 100px;
+        }
 
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
-      border-radius: 8px;
-    }
+        button:hover {
+            background-color: #d1d1d1;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
 
-    h1, h2, h3, h4 {
-      color: var(--dark-grey);
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
+        button:active {
+            transform: translateY(0);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
 
-    ul#stockList {
-      list-style-type: none;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 30px;
-    }
-    
-    ul#stockList button {
-      background-color: #e6f7f0;
-      color: var(--darker-green);
-      padding: 7px 12px;
-      font-size: 14px;
-      border-radius: 20px;
-      font-weight: 500;
-      box-shadow: none;
-    }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
 
-    ul#stockList button:hover {
-      background-color: #d0f0e0;
-      transform: none;
-    }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 30px;
+            background-color: var(--white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    input[type="text"], input[type="number"] {
-      padding: 12px 15px;
-      font-size: 16px;
-      margin: 10px 0;
-      width: calc(250px - 30px);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      background-color: #ffffff;
-    }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 8px;
+        }
 
-    input[type="text"]:focus, input[type="number"]:focus {
-      border-color: var(--primary-green);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 218, 129, 0.2);
-    }
+        input[type="text"],
+        input[type="number"] {
+            padding: 12px 15px;
+            font-size: 16px;
+            margin: 10px 0;
+            width: calc(250px - 30px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--white);
+        }
 
-    h3#cashdisplay, h4#cashdisplay {
-      color: var(--darker-green);
-      display: inline-block;
-      margin-left: 10px;
-      font-size: 1.3em;
-      font-weight: 700;
-    }
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: var(--primary-green);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.2);
+        }
 
-    input[type="text"]::placeholder, input[type="number"]::placeholder {
-      color: #999;
-    }
+        input[type="text"]::placeholder,
+        input[type="number"]::placeholder {
+            color: #999;
+            font-style: italic;
+        }
 
-    .trading-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background-color: #fcfcfc;
-      border-radius: 12px;
-      box-shadow: var(--shadow-light);
-    }
+        .cash-display {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 25px;
+            font-size: 1.4em;
+            color: var(--dark-grey);
+            font-weight: 500;
+        }
 
-    .trading-actions h2 {
-      width: 100%;
-      margin-bottom: 15px;
-    }
+        .cash-display #cashdisplay-home,
+        .cash-display #cashdisplay-trade {
+            color: var(--darker-green);
+            margin-left: 10px;
+            font-weight: 700;
+            font-size: 1.2em;
+        }
 
-    .trading-actions span {
-      margin-right: 20px;
-      display: flex;
-      align-items: baseline;
-      font-size: 1.1em;
-    }
+        .stock-category-heading {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--dark-grey);
+            font-weight: 600;
+            font-size: 1.3em;
+            border-bottom: 1px solid var(--medium-grey);
+            padding-bottom: 8px;
+        }
 
-    .trading-actions button {
-      flex-grow: 1;
-      max-width: 150px;
-      font-size: 16px;
-    }
+        .stock-category-list {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
 
-    .trading-actions button:first-of-type {
-      background-color: var(--primary-green);
-      color: white;
-    }
+        .stock-category-list button {
+            background-color: #e6f7f0;
+            color: var(--darker-green);
+            padding: 8px 14px;
+            font-size: 14px;
+            border-radius: 25px;
+            font-weight: 500;
+            box-shadow: none;
+            min-width: unset;
+        }
 
-    .trading-actions button:first-of-type:hover {
-      background-color: var(--darker-green);
-    }
+        .stock-category-list button:hover {
+            background-color: #d0f0e0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
 
-    .trading-actions button:nth-of-type(2) {
-      background-color: var(--primary-red);
-      color: white;
-    }
+        .trading-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 25px;
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+        }
 
-    .trading-actions button:nth-of-type(2):hover {
-      background-color: #cc4000;
-    }
+        .trading-actions h2 {
+            width: 100%;
+            margin-bottom: 15px;
+            color: var(--dark-grey);
+            font-size: 1.8em;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--medium-grey);
+        }
 
-    #stockTradingPage .nav-buttons {
-      background-color: transparent;
-      box-shadow: none;
-      margin-top: 0;
-      margin-bottom: 25px;
-      padding: 0;
-      gap: 10px;
-    }
+        .trading-actions .input-group {
+            display: flex;
+            gap: 10px;
+            flex-grow: 1;
+            align-items: center;
+        }
 
-    #stockTradingPage .nav-buttons button {
-      background-color: var(--medium-grey);
-      color: var(--text-color);
-      font-size: 14px;
-      padding: 8px 15px;
-      border-radius: 6px;
-    }
+        .trading-actions .input-group input {
+            flex-grow: 1;
+            width: auto;
+            margin: 0;
+        }
 
-    #stockTradingPage .nav-buttons button:hover {
-      background-color: #d1d1d1;
-    }
+        .trading-actions button {
+            flex-shrink: 0;
+            max-width: 120px;
+            font-size: 15px;
+            padding: 10px 20px;
+        }
 
-    @media (max-width: 768px) {
-      .container {
-        padding: 20px;
-        margin: 15px auto;
-        border-radius: 12px;
-      }
-      .nav-buttons {
-        flex-direction: column;
-        gap: 10px;
-      }
-      button {
-        width: 100%;
-        padding: 10px 15px;
-      }
-      ul#stockList {
-        justify-content: center;
-        gap: 6px;
-      }
-      input[type="text"], input[type="number"] {
-        width: 100%;
-        margin: 5px 0;
-      }
-      .trading-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-      }
-      .trading-actions span {
-        margin-right: 0;
-        margin-bottom: 10px;
-        justify-content: center;
-      }
-      .trading-actions button {
-        max-width: 100%;
-      }
-      #stockTradingPage .nav-buttons {
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      #stockTradingPage .nav-buttons button {
-        flex-grow: 1;
-        width: auto;
-      }
-    }
-    
-    .stock-category-heading {
-      margin-top: 25px;
-      margin-bottom: 15px;
-      color: var(--dark-grey);
-      font-weight: 600;
-      font-size: 1.2em;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 5px;
-    }
+        .trading-actions .buy-button {
+            background-color: var(--primary-green);
+            color: var(--white);
+        }
 
-    .stock-category-list {
-      list-style-type: none;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-  </style>
+        .trading-actions .buy-button:hover {
+            background-color: var(--darker-green);
+        }
+
+        .trading-actions .sell-button {
+            background-color: var(--primary-red);
+            color: var(--white);
+        }
+
+        .trading-actions .sell-button:hover {
+            background-color: #cc4000;
+        }
+
+        #error {
+            color: var(--primary-red);
+            font-weight: 600;
+            margin-top: 20px;
+            padding: 15px 25px;
+            background-color: #ffe8e8;
+            border-left: 6px solid var(--primary-red);
+            border-radius: 8px;
+            display: none;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+            animation: slideIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+
+        .modal-content p {
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            color: var(--text-color);
+            line-height: 1.5;
+        }
+
+        .modal-content button {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .modal-content button:hover {
+            background-color: var(--darker-green);
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+
+        #leaderboardPage table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: var(--shadow-light);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #leaderboardPage th, #leaderboardPage td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #leaderboardPage th {
+            background-color: var(--medium-grey);
+            color: var(--dark-grey);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        #leaderboardPage tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+
+        #leaderboardPage tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        #leaderboardPage td:last-child {
+            font-weight: 600;
+            color: var(--primary-green);
+        }
+
+        #leaderboardPage h1 {
+            text-align: center;
+        }
+
+        .username-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .username-modal-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-medium);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .username-modal-content h2 {
+            margin-top: 0;
+            color: var(--dark-grey);
+        }
+
+        .username-modal-content input[type="text"] {
+            width: calc(100% - 30px);
+            margin-bottom: 20px;
+        }
+
+        .username-modal-content button {
+            width: auto;
+            padding: 12px 30px;
+            background-color: var(--primary-green);
+            color: white;
+            font-weight: 600;
+        }
+
+        .username-modal-content button:hover {
+            background-color: var(--darker-green);
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                padding: 25px;
+                margin: 20px auto;
+            }
+            .trading-actions .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .trading-actions button {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 15px auto;
+                border-radius: 10px;
+            }
+            .nav-buttons {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 10px;
+                border-radius: 8px;
+            }
+            .nav-buttons button {
+                flex-grow: 1;
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            .section-heading {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+            .cash-display {
+                font-size: 1.2em;
+            }
+            .chart-container {
+                height: 300px;
+                padding: 15px;
+            }
+            input[type="text"],
+            input[type="number"] {
+                width: 100%;
+                margin: 5px 0;
+                padding: 10px 12px;
+            }
+            .trading-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+                padding: 15px;
+            }
+            .trading-actions .input-group {
+                gap: 8px;
+            }
+            .trading-actions h2 {
+                font-size: 1.5em;
+                margin-bottom: 10px;
+            }
+            .stock-category-list {
+                justify-content: center;
+                gap: 6px;
+            }
+            .stock-category-list button {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            #leaderboardPage th, #leaderboardPage td {
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px auto;
+                padding: 15px;
+            }
+            .section-heading {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+            }
+            .cash-display {
+                font-size: 1em;
+            }
+            .chart-container {
+                height: 250px;
+            }
+            .trading-actions {
+                padding: 10px;
+            }
+            .modal-content {
+                padding: 25px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <div class="nav-buttons">
-    <button onclick="showSection('homepage')">Home</button>
-    <button onclick="showSection('stockTradingPage')">Trade Stocks</button>
-  </div>
-
-  <div id="homepage" class="container">
-    <h1>Portfolio Overview</h1>
-    <span><h3>Cash:</h3><h3 id="cashdisplay"></h3></span>
-    <div class="chart-container">
-      <canvas id="portfolioChart"></canvas>
-    </div>
-    
-    <h2>Top Stocks</h2>
-    
-    <h3 class="stock-category-heading">Technology & Growth Stocks</h3>
-    <ul class="stock-category-list">
-      <li><button onclick="loadStock('AAPL')">AAPL</button></li>
-      <li><button onclick="loadStock('NVDA')">NVDA</button></li>
-      <li><button onclick="loadStock('AMZN')">AMZN</button></li>
-      <li><button onclick="loadStock('GOOGL')">GOOGL</button></li>
-      <li><button onclick="loadStock('MSFT')">MSFT</button></li>
-      <li><button onclick="loadStock('FB')">FB</button></li>
-      <li><button onclick="loadStock('NFLX')">NFLX</button></li>
-      <li><button onclick="loadStock('PYPL')">PYPL</button></li>
-      <li><button onclick="loadStock('CRM')">CRM</button></li>
-      <li><button onclick="loadStock('INTC')">INTC</button></li>
-      <li><button onclick="loadStock('CSCO')">CSCO</button></li>
-      <li><button onclick="loadStock('QCOM')">QCOM</button></li>
-      <li><button onclick="loadStock('AMD')">AMD</button></li>
-      <li><button onclick="loadStock('SQ')">SQ</button></li>
-      <li><button onclick="loadStock('PINS')">PINS</button></li>
-      <li><button onclick="loadStock('ZM')">ZM</button></li>
-      <li><button onclick="loadStock('DOCU')">DOCU</button></li>
-      <li><button onclick="loadStock('ROKU')">ROKU</button></li>
-      <li><button onclick="loadStock('DDOG')">DDOG</button></li>
-      <li><button onclick="loadStock('CRWD')">CRWD</button></li>
-      <li><button onclick="loadStock('NET')">NET</button></li>
-      <li><button onclick="loadStock('OKTA')">OKTA</button></li>
-      <li><button onclick="loadStock('ZS')">ZS</button></li>
-      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
-    </ul>
-
-    <h3 class="stock-category-heading">Automotive & Mobility</h3>
-    <ul class="stock-category-list">
-      <li><button onclick="loadStock('TSLA')">TSLA</button></li>
-      <li><button onclick="loadStock('RIVN')">RIVN</button></li>
-      <li><button onclick="loadStock('CHPT')">CHPT</button></li>
-      <li><button onclick="loadStock('UBER')">UBER</button></li>
-      <li><button onclick="loadStock('LYFT')">LYFT</button></li>
-    </ul>
-
-    <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
-    <ul class="stock-category-list">
-      <li><button onclick="loadStock('SPY')">SPY</button></li>
-      <li><button onclick="loadStock('QQQ')">QQQ</button></li>
-      <li><button onclick="loadStock('DIA')">DIA</button></li>
-      <li><button onclick="loadStock('IVV')">IVV</button></li>
-      <li><button onclick="loadStock('VOO')">VOO</button></li>
-      <li><button onclick="loadStock('VTI')">VTI</button></li>
-      <li><button onclick="loadStock('ARKK')">ARKK</button></li>
-      <li><button onclick="loadStock('SMH')">SMH</button></li>
-      <li><button onclick="loadStock('XLK')">XLK</button></li>
-      <li><button onclick="loadStock('GLD')">GLD</button></li>
-      <li><button onclick="loadStock('SLV')">SLV</button></li>
-      <li><button onclick="loadStock('USO')">USO</button></li>
-      <li><button onclick="loadStock('TLT')">TLT</button></li>
-      <li><button onclick="loadStock('BND')">BND</button></li>
-      <li><button onclick="loadStock('SOXS')">SOXS</button></li>
-      <li><button onclick="loadStock('SOXL')">SOXL</button></li>
-    </ul>
-
-    <h3 class="stock-category-heading">Recent IPOs</h3>
-    <ul class="stock-category-list">
-      <li><button onclick="loadStock('ARM')">ARM</button></li>
-      <li><button onclick="loadStock('HOOD')">HOOD</button></li>
-      <li><button onclick="loadStock('ABNB')">ABNB</button></li>
-      <li><button onclick="loadStock('SNOW')">SNOW</button></li>
-      <li><button onclick="loadStock('RBLX')">RBLX</button></li>
-      <li><button onclick="loadStock('COIN')">COIN</button></li>
-      <li><button onclick="loadStock('U')">U</button></li>
-    </ul>
-
-    <h3 class="stock-category-heading">Other / Emerging Markets</h3>
-    <ul class="stock-category-list">
-      <li><button onclick="loadStock('AIRO')">AIRO</button></li>
-      <li><button onclick="loadStock('SFIX')">SFIX</button></li>
-      <li><button onclick="loadStock('PLTR')">PLTR</button></li>
-      <li><button onclick="loadStock('UPST')">UPST</button></li>
-    </ul>
-
-    <input type="text" id="stockSearch" placeholder="Search stock symbol">
-    <button onclick="searchStockmainpage()">Search</button>
-
-  </div>
-
-  <div id="stockTradingPage" class="container">
-    <h1>Stock Data Searcher</h1>
-    
-    <input type="text" id="stockSymbol" placeholder="Enter stock symbol (e.g., AAPL)">
-    <button onclick="searchStock()">Search</button>
-    <p id="error"></p>
-
-    <div class="nav-buttons" style="margin-top: 20px; margin-bottom: 25px; box-shadow: none; background-color: transparent;">
-      <button onclick="changeTimeframe('live')">Live</button>
-      <button onclick="changeTimeframe('1M')">1M</button>
-      <button onclick="changeTimeframe('3M')">3M</button>
-      <button onclick="changeTimeframe('6M')">6M</button>
-      <button onclick="changeTimeframe('1Y')">1Y</button>
-      <button onclick="changeTimeframe('2Y')">2Y</button>
-      <button onclick="changeTimeframe('5Y')">5Y</button>
-      <button onclick="changeTimeframe('ALL')">ALL</button>
+    <div class="nav-buttons">
+        <button id="homeNavBtn" onclick="showSection('homepage')">Home</button>
+        <button id="tradeNavBtn" onclick="showSection('stockTradingPage')">Trade Stocks</button>
+        <button id="leaderboardNavBtn" onclick="showSection('leaderboardPage')">Leaderboard</button>
     </div>
 
-    <div class="trading-actions">
-      <h2>Trading Actions</h2>
-      <span><h4>Cash:</h4><h4 id="cashdisplay"></h4></span>
-      <input type="number" id="buyAmount" placeholder="Amount to Buy">
-      <button onclick="buyStock()">Buy</button>
-      <input type="number" id="sellAmount" placeholder="Amount to Sell">
-      <button onclick="sellStock()">Sell</button>
+    <div id="homepage" class="container">
+        <h1 class="section-heading">Portfolio Overview</h1>
+        <div class="cash-display">
+            <h4>Current Cash:</h4>
+            <h4 id="cashdisplay-home">$0.00</h4>
+        </div>
+        <div class="chart-container">
+            <canvas id="portfolioChart"></canvas>
+        </div>
+
+        <h2 class="section-heading">Explore Stocks</h2>
+
+        <h3 class="stock-category-heading">Technology & Growth Stocks</h3>
+        <ul class="stock-category-list">
+            <li><button onclick="loadStock('AAPL')">AAPL</button></li>
+            <li><button onclick="loadStock('NVDA')">NVDA</button></li>
+            <li><button onclick="loadStock('AMZN')">AMZN</button></li>
+            <li><button onclick="loadStock('GOOGL')">GOOGL</button></li>
+            <li><button onclick="loadStock('MSFT')">MSFT</button></li>
+            <li><button onclick="loadStock('FB')">FB</button></li>
+            <li><button onclick="loadStock('NFLX')">NFLX</button></li>
+            <li><button onclick="loadStock('PYPL')">PYPL</button></li>
+            <li><button onclick="loadStock('CRM')">CRM</button></li>
+            <li><button onclick="loadStock('INTC')">INTC</button></li>
+            <li><button onclick="loadStock('CSCO')">CSCO</button></li>
+            <li><button onclick="loadStock('QCOM')">QCOM</button></li>
+            <li><button onclick="loadStock('AMD')">AMD</button></li>
+            <li><button onclick="loadStock('SQ')">SQ</button></li>
+            <li><button onclick="loadStock('PINS')">PINS</button></li>
+            <li><button onclick="loadStock('ZM')">ZM</button></li>
+            <li><button onclick="loadStock('DOCU')">DOCU</button></li>
+            <li><button onclick="loadStock('ROKU')">ROKU</button></li>
+            <li><button onclick="loadStock('DDOG')">DDOG</button></li>
+            <li><button onclick="loadStock('CRWD')">CRWD</button></li>
+            <li><button onclick="loadStock('NET')">NET</button></li>
+            <li><button onclick="loadStock('OKTA')">OKTA</button></li>
+            <li><button onclick="loadStock('ZS')">ZS</button></li>
+            <li><button onclick="loadStock('SNOW')">SNOW</button></li>
+        </ul>
+
+        <h3 class="stock-category-heading">Automotive & Mobility</h3>
+        <ul class="stock-category-list">
+            <li><button onclick="loadStock('TSLA')">TSLA</button></li>
+            <li><button onclick="loadStock('RIVN')">RIVN</button></li>
+            <li><button onclick="loadStock('CHPT')">CHPT</button></li>
+            <li><button onclick="loadStock('UBER')">UBER</button></li>
+            <li><button onclick="loadStock('LYFT')">LYFT</button></li>
+        </ul>
+
+        <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
+        <ul class="stock-category-list">
+            <li><button onclick="loadStock('SPY')">SPY</button></li>
+            <li><button onclick="loadStock('QQQ')">QQQ</button></li>
+            <li><button onclick="loadStock('DIA')">DIA</button></li>
+            <li><button onclick="loadStock('IVV')">IVV</button></li>
+            <li><button onclick="loadStock('VOO')">VOO</button></li>
+            <li><button onclick="loadStock('VTI')">VTI</button></li>
+            <li><button onclick="loadStock('ARKK')">ARKK</button></li>
+            <li><button onclick="loadStock('SMH')">SMH</button></li>
+            <li><button onclick="loadStock('XLK')">XLK</button></li>
+            <li><button onclick="loadStock('GLD')">GLD</button></li>
+            <li><button onclick="loadStock('SLV')">SLV</button></li>
+            <li><button onclick="loadStock('USO')">USO</button></li>
+            <li><button onclick="loadStock('TLT')">TLT</button></li>
+            <li><button onclick="loadStock('BND')">BND</button></li>
+            <li><button onclick="loadStock('SOXS')">SOXS</button></li>
+            <li><button onclick="loadStock('SOXL')">SOXL</button></li>
+        </ul>
+
+        <h3 class="stock-category-heading">Recent IPOs</h3>
+        <ul class="stock-category-list">
+            <li><button onclick="loadStock('ARM')">ARM</button></li>
+            <li><button onclick="loadStock('HOOD')">HOOD</button></li>
+            <li><button onclick="loadStock('ABNB')">ABNB</button></li>
+            <li><button onclick="loadStock('SNOW')">SNOW</button></li>
+            <li><button onclick="loadStock('RBLX')">RBLX</button></li>
+            <li><button onclick="loadStock('COIN')">COIN</button></li>
+            <li><button onclick="loadStock('U')">U</button></li>
+        </ul>
+
+        <h3 class="stock-category-heading">Other / Emerging Markets</h3>
+        <ul class="stock-category-list">
+            <li><button onclick="loadStock('AIRO')">AIRO</button></li>
+            <li><button onclick="loadStock('SFIX')">SFIX</button></li>
+            <li><button onclick="loadStock('PLTR')">PLTR</button></li>
+            <li><button onclick="loadStock('UPST')">UPST</button></li>
+        </ul>
+
+        <div style="display: flex; gap: 15px; margin-top: 30px; align-items: center;">
+            <input type="text" id="stockSearch" placeholder="Search stock symbol (e.g., TSLA)">
+            <button onclick="searchStockmainpage()">Search</button>
+        </div>
+
     </div>
 
-    <div class="chart-container">
-      <canvas id="stockChart"></canvas>
+    <div id="stockTradingPage" class="container">
+        <h1 class="section-heading">Stock Trading</h1>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center;">
+            <input type="text" id="stockSymbol" placeholder="Enter stock symbol (e.g., AAPL)">
+            <button onclick="searchStock()">Load Chart</button>
+        </div>
+        
+        <p id="error"></p>
+
+        <div class="nav-buttons time-frame-buttons" style="margin-top: 0; margin-bottom: 25px; box-shadow: none; background-color: transparent;">
+            <button onclick="changeTimeframe('live')">Live</button>
+            <button onclick="changeTimeframe('1M')">1M</button>
+            <button onclick="changeTimeframe('3M')">3M</button>
+            <button onclick="changeTimeframe('6M')">6M</button>
+            <button onclick="changeTimeframe('1Y')">1Y</button>
+            <button onclick="changeTimeframe('2Y')">2Y</button>
+            <button onclick="changeTimeframe('5Y')">5Y</button>
+            <button onclick="changeTimeframe('ALL')">ALL</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+        </div>
+
+        <div class="trading-actions">
+            <h2>Perform Trades</h2>
+            <div class="cash-display" style="width: 100%; justify-content: center; margin-bottom: 20px;">
+                <h4>Available Cash:</h4>
+                <h4 id="cashdisplay-trade">$0.00</h4>
+            </div>
+            
+            <div class="input-group">
+                <input type="number" id="buyAmount" placeholder="Shares to Buy">
+                <button class="buy-button" onclick="buyStock()">Buy</button>
+            </div>
+            <div class="input-group">
+                <input type="number" id="sellAmount" placeholder="Shares to Sell">
+                <button class="sell-button" onclick="sellStock()">Sell</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    let stockSymbol = 'AAPL';
-    let stockChart;
-    let portfolioChart;
-    let timeframe = 'ALL';
-    const ctx = document.getElementById('stockChart').getContext('2d');
-    const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
-    let cash = 0;
-    let portfolio = {};
-    let userId = localStorage.getItem('stockAppUserId'); // Retrieve user ID from local storage
+    <div id="leaderboardPage" class="container">
+        <h1 class="section-heading">Global Leaderboard</h1>
+        <table id="leaderboardTable">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>User</th>
+                    <th>Net Worth</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 
-    // Generate a unique user ID if one doesn't exist
-    if (!userId) {
-      userId = crypto.randomUUID(); // Generate a UUID
-      localStorage.setItem('stockAppUserId', userId); // Store it in local storage
-    }
-    console.log('User ID:', userId); // Log user ID for debugging
+    <script>
+        let stockSymbol = 'AAPL';
+        let stockChart;
+        let portfolioChart;
+        let timeframe = 'ALL';
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+        let cash = 0;
+        let portfolio = {};
+        let userId = localStorage.getItem('stockAppUserId');
+        let username = localStorage.getItem('stockAppUsername');
 
-    async function fetchUserData() {
-        try {
-            const response = await fetch('http://localhost:5001/api/user-data', {
-                headers: {
-                    'X-User-Id': userId // Send user ID in a custom header
+        function showUsernamePrompt() {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'username-modal-overlay';
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'username-modal-content';
+            modalContent.innerHTML = `
+                <h2>Welcome! Please set your username.</h2>
+                <input type="text" id="usernameInput" placeholder="Enter your username" required>
+                <button id="saveUsernameBtn">Save Username</button>
+            `;
+
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalContent); // Append modal content, not overlay itself to body
+            document.body.appendChild(modalOverlay); // Append overlay after modal content to handle z-index and click behavior
+
+            const usernameInput = document.getElementById('usernameInput');
+            const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+
+            saveUsernameBtn.onclick = async () => {
+                const newUsername = usernameInput.value.trim();
+                if (newUsername) {
+                    username = newUsername;
+                    localStorage.setItem('stockAppUsername', username);
+                    document.body.removeChild(modalOverlay); // Remove overlay which contains the modal
+                    await fetchUserData();
+                    showSection('homepage');
+                } else {
+                    showModal('Please enter a valid username.');
+                }
+            };
+
+            usernameInput.focus();
+        }
+
+        async function fetchUserData() {
+            try {
+                const response = await fetch('http://localhost:5001/api/user-data', {
+                    headers: {
+                        'X-User-Id': userId,
+                        'X-User-Name': username
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                cash = data.cash;
+                portfolio = data.portfolio;
+                if (data.username) {
+                  username = data.username;
+                  localStorage.setItem('stockAppUsername', username);
+                }
+                document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
+                document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+                updatePortfolioChart();
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                showModal('Error fetching user data: ' + error.message);
+            }
+        }
+
+        async function fetchLeaderboardData() {
+            try {
+                const response = await fetch('http://localhost:5001/api/leaderboard');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const leaderboardData = await response.json();
+                const leaderboardTableBody = document.querySelector('#leaderboardTable tbody');
+                leaderboardTableBody.innerHTML = '';
+
+                leaderboardData.forEach((entry, index) => {
+                    const row = leaderboardTableBody.insertRow();
+                    row.insertCell(0).textContent = index + 1;
+                    row.insertCell(1).textContent = entry.username;
+                    row.insertCell(2).textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(entry.netWorth);
+                });
+            } catch (error) {
+                console.error('Error fetching leaderboard data:', error);
+                showModal('Error fetching leaderboard: ' + error.message);
+            }
+        }
+
+        function createStockChart() {
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
+            const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-red');
+
+            stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: stockSymbol,
+                        data: [],
+                        borderColor: primaryColor,
+                        borderWidth: 2,
+                        fill: {
+                            target: 'origin',
+                            above: (context) => {
+                                const chart = context.chart;
+                                const { ctx, chartArea } = chart;
+                                if (!chartArea) return null;
+
+                                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                                gradient.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--gradient-end'));
+                                gradient.addColorStop(0.5, getComputedStyle(document.documentElement).getPropertyValue('--gradient-start'));
+                                gradient.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--primary-green'));
+                                return gradient;
+                            },
+                            below: (context) => {
+                                const chart = context.chart;
+                                const { ctx, chartArea } = chart;
+                                if (!chartArea) return null;
+
+                                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                                gradient.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--red-gradient-end'));
+                                gradient.addColorStop(0.5, getComputedStyle(document.documentElement).getPropertyValue('--red-gradient-start'));
+                                gradient.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--primary-red'));
+                                return gradient;
+                            }
+                        },
+                        pointRadius: 0,
+                        pointHitRadius: 10,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: primaryColor,
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            titleFont: { size: 15, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            caretSize: 6,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const timestamp = tooltipItems[0].parsed.x;
+                                    return luxon.DateTime.fromMillis(timestamp).toLocaleString(luxon.DateTime.DATETIME_SHORT);
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                tooltipFormat: 'MMM dd,yyyy HH:mm'
+                            },
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: 'var(--dark-grey)',
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'var(--border-color)',
+                                drawBorder: false,
+                                borderDash: [3, 3]
+                            },
+                            ticks: {
+                                color: 'var(--dark-grey)',
+                                font: { size: 11 },
+                                callback: function(value, index, values) {
+                                    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+                                }
+                            }
+                        }
+                    }
                 }
             });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            cash = data.cash;
-            portfolio = data.portfolio;
-            document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
-            updatePortfolioChart();
-        } catch (error) {
-            console.error('Error fetching user data:', error);
-            showModal('Error fetching user data: ' + error.message);
         }
-    }
 
-    function createStockChart() {
-      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
-      const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-red');
-
-      stockChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: stockSymbol,
-            data: [],
-            borderColor: primaryColor,
-            borderWidth: 2,
-            fill: {
-                target: 'origin',
-                above: (context) => {
-                    const chart = context.chart;
-                    const { ctx, chartArea } = chart;
-                    if (!chartArea) return null;
-
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, `${primaryColor}00`);
-                    gradient.addColorStop(0.5, `${primaryColor}40`);
-                    gradient.addColorStop(1, `${primaryColor}80`);
-                    return gradient;
+        function createPortfolioChart() {
+            portfolioChart = new Chart(portfolioCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#00b894', '#00cec9', '#81ecec', '#ffeaa7', '#fab1a0', '#ff7675', '#a29bfe', '#fd79a8', '#636e72', '#2d3436'],
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
                 },
-                below: `${negativeColor}40`
-            },
-            pointRadius: 0,
-            pointHitRadius: 10,
-            pointHoverRadius: 5,
-            pointBackgroundColor: primaryColor,
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-            tension: 0.1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-              legend: {
-                  display: false
-              },
-              tooltip: {
-                  mode: 'index',
-                  intersect: false,
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  titleFont: { size: 14, weight: 'bold' },
-                  bodyFont: { size: 12 },
-                  padding: 10,
-                  caretSize: 5,
-                  cornerRadius: 8,
-                  displayColors: false,
-                  callbacks: {
-                      title: function(tooltipItems) {
-                          const timestamp = tooltipItems[0].parsed.x; 
-                          return luxon.DateTime.fromMillis(timestamp).toLocaleString(luxon.DateTime.DATETIME_SHORT);
-                      },
-                      label: function(context) {
-                          let label = context.dataset.label || '';
-                          if (label) {
-                              label += ': ';
-                          }
-                          if (context.parsed.y !== null) {
-                              label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                          }
-                          return label;
-                      }
-                  }
-              }
-          },
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                unit: 'day',
-                tooltipFormat: 'MMM dd,yyyy HH:mm'
-              },
-              grid: {
-                  display: false,
-                  drawBorder: false
-              },
-              ticks: {
-                  color: 'var(--dark-grey)',
-                  font: { size: 10 }
-              }
-            },
-            y: {
-              beginAtZero: false,
-              grid: {
-                  color: 'var(--border-color)',
-                  drawBorder: false,
-                  borderDash: [2, 2]
-              },
-              ticks: {
-                  color: 'var(--dark-grey)',
-                  font: { size: 10 },
-                  callback: function(value, index, values) {
-                      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-                  }
-              }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    family: 'Inter',
+                                },
+                                color: 'var(--text-color)',
+                                boxWidth: 20,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            caretSize: 5,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                        const percentage = (context.parsed / total * 100).toFixed(2);
+                                        label += new Intl.NumberFormat('en-US').format(context.parsed) + ` (${percentage}%)`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 0,
+                            right: 50,
+                            top: 0,
+                            bottom: 0
+                        }
+                    }
+                }
+            });
+        }
+
+        async function fetchStockData() {
+            const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].timestamp) {
+                    updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
+                    document.getElementById('error').textContent = '';
+                    document.getElementById('error').style.display = 'none';
+                } else {
+                    throw new Error('Invalid data format received from API');
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
+                document.getElementById('error').style.display = 'block';
+                changeTimeframe(timeframe);
             }
-          }
         }
-      });
-    }
 
-    function createPortfolioChart() {
-      portfolioChart = new Chart(portfolioCtx, {
-        type: 'pie',
-        data: {
-          labels: [],
-          datasets: [{
-            data: [],
-            backgroundColor: ['#00da81', '#007bff', '#ffc107', '#17a2b8', '#6610f2', '#fd7e14', '#20c997', '#6f42c1', '#dc3545', '#343a40'],
-            borderColor: 'white',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-              legend: {
-                  position: 'right',
-                  labels: {
-                      font: {
-                          size: 14
-                      },
-                      color: 'var(--text-color)',
-                      boxWidth: 20,
-                      padding: 15
-                  }
-              },
-              tooltip: {
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  titleFont: { size: 14, weight: 'bold' },
-                  bodyFont: { size: 12 },
-                  padding: 10,
-                  caretSize: 5,
-                  cornerRadius: 8,
-                  callbacks: {
-                      label: function(context) {
-                          let label = context.label || '';
-                          if (label) {
-                              label += ': ';
-                          }
-                          if (context.parsed !== null) {
-                              const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                              const percentage = (context.parsed / total * 100).toFixed(2);
-                              label += new Intl.NumberFormat('en-US').format(context.parsed) + ` (${percentage}%)`;
-                          }
-                          return label;
-                      }
-                  }
-              }
-          },
-          layout: {
-              padding: {
-                  left: 0,
-                  right: 50,
-                  top: 0,
-                  bottom: 0
-              }
-          }
+        async function fetchStockDatalive() {
+            const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
+                document.getElementById('error').textContent = '';
+                document.getElementById('error').style.display = 'none';
+            } catch (error) {
+                document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
+                document.getElementById('error').style.display = 'block';
+                changeTimeframe(timeframe);
+            }
         }
-      });
-    }
 
-    async function fetchStockData() {
-      const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        function updateChart(timestamps, prices) {
+            stockChart.data.labels = timestamps.map(ts => new Date(ts * 1000));
+            stockChart.data.datasets[0].data = prices;
+            stockChart.update();
         }
-        const data = await response.json();
-        if (data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].timestamp) {
-          updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
-          document.getElementById('error').textContent = '';
-          document.getElementById('error').style.display = 'none';
-        } else {
-          throw new Error('Invalid data format received from API');
+
+        function searchStock() {
+            stockSymbol = document.getElementById('stockSymbol').value.toUpperCase();
+            if (stockSymbol) {
+                document.getElementById('error').textContent = '';
+                document.getElementById('error').style.display = 'none';
+                resetChart();
+                fetchStockData();
+            }
         }
-      } catch (error) {
-        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
-        document.getElementById('error').style.display = 'block';
-        changeTimeframe(timeframe); 
-      }
-    }
 
-    async function fetchStockDatalive() {
-      const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        let liveinterval = 0;
+
+        function changeTimeframe(newTimeframe) {
+            if (newTimeframe === "live" && liveinterval === 0) {
+                timeframe = newTimeframe;
+                document.getElementById('error').textContent = '';
+                document.getElementById('error').style.display = 'none';
+                resetChart();
+                liveinterval = setInterval(fetchStockDatalive, 1000);
+            } else if (newTimeframe !== "live") {
+                timeframe = newTimeframe;
+                document.getElementById('error').textContent = '';
+                document.getElementById('error').style.display = 'none';
+                resetChart();
+                fetchStockData();
+                clearInterval(liveinterval);
+                liveinterval = 0;
+            }
         }
-        const data = await response.json();
-        updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
-        document.getElementById('error').textContent = '';
-        document.getElementById('error').style.display = 'none';
-      } catch (error) {
-        document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
-        document.getElementById('error').style.display = 'block';
-        changeTimeframe(timeframe); 
-      }
-    }
-
-    function updateChart(timestamps, prices) {
-      stockChart.data.labels = timestamps.map(ts => new Date(ts * 1000));
-      stockChart.data.datasets[0].data = prices;
-      stockChart.update();
-    }
-
-    function searchStock() {
-      stockSymbol = document.getElementById('stockSymbol').value.toUpperCase();
-      if (stockSymbol) {
-        document.getElementById('error').textContent = '';
-        document.getElementById('error').style.display = 'none';
-        resetChart();
-        fetchStockData();
-      }
-    }
-
-    let liveinterval = 0;
-
-    function changeTimeframe(newTimeframe) {
-      if (newTimeframe === "live" && liveinterval === 0) {
-        timeframe = newTimeframe;
-        document.getElementById('error').textContent = '';
-        document.getElementById('error').style.display = 'none';
-        resetChart();
-        liveinterval = setInterval(fetchStockDatalive, 1000);
-      } else if (newTimeframe !== "live") {
-        timeframe = newTimeframe;
-        document.getElementById('error').textContent = '';
-        document.getElementById('error').style.display = 'none';
-        resetChart();
-        fetchStockData();
-        clearInterval(liveinterval);
-        liveinterval = 0;
-      }
-    }
-    
-    function resetChart() {
-      if (stockChart) {
-        stockChart.destroy();
-      }
-      createStockChart();
-    }
-
-    async function buyStock() {
-      const amount = parseFloat(document.getElementById('buyAmount').value);
-      if (isNaN(amount) || amount <= 0) {
-        showModal('Invalid amount. Please enter a positive number.');
-        return;
-      }
-
-      const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-      if (!currentPrice) {
-        showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
-        return;
-      }
-
-      try {
-          const response = await fetch('http://localhost:5001/api/buy-stock', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-User-Id': userId // Send user ID
-              },
-              body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
-          });
-
-          const result = await response.json();
-          if (response.ok) {
-              cash = result.cash;
-              portfolio = result.portfolio;
-              document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
-              updatePortfolioChart();
-              showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
-          } else {
-              showModal('Purchase failed: ' + result.error);
-          }
-      } catch (error) {
-          console.error('Error buying stock:', error);
-          showModal('Error communicating with server: ' + error.message);
-      }
-    }
-
-    async function sellStock() {
-      const amount = parseFloat(document.getElementById('sellAmount').value);
-      if (isNaN(amount) || amount <= 0) {
-        showModal('Invalid amount. Please enter a positive number.');
-        return;
-      }
-
-      const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-      if (!currentPrice) {
-        showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
-        return;
-      }
-
-      try {
-          const response = await fetch('http://localhost:5001/api/sell-stock', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-User-Id': userId // Send user ID
-              },
-              body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
-          });
-
-          const result = await response.json();
-          if (response.ok) {
-              cash = result.cash;
-              portfolio = result.portfolio;
-              document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
-              updatePortfolioChart();
-              showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
-          } else {
-              showModal('Sale failed: ' + result.error);
-          }
-      } catch (error) {
-          console.error('Error selling stock:', error);
-          showModal('Error communicating with server: ' + error.message);
-      }
-    }
-
-    function updatePortfolioChart() {
-      const labels = Object.keys(portfolio);
-      const data = labels.map(symbol => portfolio[symbol]);
-      portfolioChart.data.labels = labels;
-      portfolioChart.data.datasets[0].data = data;
-      portfolioChart.update();
-    }
-
-    function loadStock(stock) {
-      stockSymbol = stock;
-      document.getElementById('stockSymbol').value = stock;
-      document.getElementById('cashdisplay').innerHTML = cash.toFixed(2);
-      showSection('stockTradingPage');
-      document.getElementById('error').textContent = '';
-      document.getElementById('error').style.display = 'none';
-      resetChart();
-      fetchStockData();
-    }
-
-    function showSection(sectionId) {
-      document.getElementById('homepage').style.display = sectionId === 'homepage' ? 'block' : 'none';
-      document.getElementById('stockTradingPage').style.display = sectionId === 'stockTradingPage' ? 'block' : 'none';
-      if (sectionId === 'homepage') {
-        fetchUserData(); 
-        if (!portfolioChart) {
-          createPortfolioChart();
+        
+        function resetChart() {
+            if (stockChart) {
+                stockChart.destroy();
+            }
+            createStockChart();
         }
-      }
-    }
 
-    function searchStockmainpage() {
-      loadStock(document.getElementById("stockSearch").value.toUpperCase());
-    }
+        async function buyStock() {
+            const amount = parseFloat(document.getElementById('buyAmount').value);
+            if (isNaN(amount) || amount <= 0) {
+                showModal('Invalid amount. Please enter a positive number.');
+                return;
+            }
 
-    function showModal(message) {
-      const modal = document.createElement('div');
-      modal.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-        text-align: center;
-        max-width: 90%;
-        font-family: 'Inter', sans-serif;
-      `;
+            const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
+            if (!currentPrice) {
+                showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
+                return;
+            }
 
-      const messagePara = document.createElement('p');
-      messagePara.textContent = message;
-      messagePara.style.marginBottom = '20px';
-      messagePara.style.fontSize = '1.1em';
-      messagePara.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color'); 
+            try {
+                const response = await fetch('http://localhost:5001/api/buy-stock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId,
+                        'X-User-Name': username
+                    },
+                    body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
+                });
 
-      const closeButton = document.createElement('button');
-      closeButton.textContent = 'OK';
-      closeButton.style.cssText = `
-        background-color: var(--primary-green);
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1em;
-        transition: background-color 0.2s ease;
-      `;
-      closeButton.onmouseover = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--darker-green');
-      closeButton.onmouseout = () => closeButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
-      closeButton.onclick = () => {
-        document.body.removeChild(modal);
-        document.body.removeChild(overlay);
-      };
+                const result = await response.json();
+                if (response.ok) {
+                    cash = result.cash;
+                    portfolio = result.portfolio;
+                    document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
+                    document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+                    updatePortfolioChart();
+                    showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
+                } else {
+                    showModal('Purchase failed: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error buying stock:', error);
+                showModal('Error communicating with server: ' + error.message);
+            }
+        }
 
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-      `;
-      overlay.onclick = () => {
-        document.body.removeChild(modal);
-        document.body.removeChild(overlay);
-      };
+        async function sellStock() {
+            const amount = parseFloat(document.getElementById('sellAmount').value);
+            if (isNaN(amount) || amount <= 0) {
+                showModal('Invalid amount. Please enter a positive number.');
+                return;
+            }
 
-      modal.appendChild(messagePara);
-      modal.appendChild(closeButton);
-      document.body.appendChild(overlay);
-      document.body.appendChild(modal);
-    }
+            const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
+            if (!currentPrice) {
+                showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
+                return;
+            }
 
-    createStockChart();
-    createPortfolioChart();
-    fetchUserData();
-    showSection('homepage');
-    loadStock('AAPL'); 
-  </script>
+            try {
+                const response = await fetch('http://localhost:5001/api/sell-stock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId,
+                        'X-User-Name': username
+                    },
+                    body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    cash = result.cash;
+                    portfolio = result.portfolio;
+                    document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
+                    document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+                    updatePortfolioChart();
+                    showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
+                } else {
+                    showModal('Sale failed: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error selling stock:', error);
+                showModal('Error communicating with server: ' + error.message);
+            }
+        }
+
+        function updatePortfolioChart() {
+            const labels = Object.keys(portfolio);
+            const data = labels.map(symbol => portfolio[symbol]);
+            portfolioChart.data.labels = labels;
+            portfolioChart.data.datasets[0].data = data;
+            portfolioChart.update();
+        }
+
+        function loadStock(stock) {
+            stockSymbol = stock;
+            document.getElementById('stockSymbol').value = stock;
+            document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
+            document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+            showSection('stockTradingPage');
+            document.getElementById('error').textContent = '';
+            document.getElementById('error').style.display = 'none';
+            resetChart();
+            fetchStockData();
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.container').forEach(section => {
+                section.classList.remove('active');
+                section.style.display = 'none';
+            });
+            document.querySelectorAll('.nav-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(sectionId).classList.add('active');
+            document.getElementById(sectionId).style.display = 'block';
+
+            if (sectionId === 'homepage') {
+                document.getElementById('homeNavBtn').classList.add('active');
+                fetchUserData();
+                if (!portfolioChart) {
+                    createPortfolioChart();
+                }
+            } else if (sectionId === 'stockTradingPage') {
+                document.getElementById('tradeNavBtn').classList.add('active');
+                fetchUserData();
+                if (!stockSymbol || stockChart.data.datasets[0].data.length === 0) {
+                    stockSymbol = 'AAPL';
+                    document.getElementById('stockSymbol').value = stockSymbol;
+                    resetChart();
+                    fetchStockData();
+                }
+            } else if (sectionId === 'leaderboardPage') {
+                document.getElementById('leaderboardNavBtn').classList.add('active');
+                fetchLeaderboardData();
+            }
+        }
+
+        function searchStockmainpage() {
+            loadStock(document.getElementById("stockSearch").value.toUpperCase());
+        }
+
+        function showModal(message) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+
+            const messagePara = document.createElement('p');
+            messagePara.textContent = message;
+
+            const closeButton = document.createElement('button');
+            closeButton.textContent = 'OK';
+            closeButton.onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            modalContent.appendChild(messagePara);
+            modalContent.appendChild(closeButton);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+        createStockChart();
+        createPortfolioChart();
+
+        async function initializeApp() {
+            if (!userId) {
+                userId = crypto.randomUUID();
+                localStorage.setItem('stockAppUserId', userId);
+                showUsernamePrompt();
+            } else if (!username) {
+                showUsernamePrompt();
+            } else {
+                await fetchUserData();
+                showSection('homepage'); // Ensure it starts on the homepage
+            }
+        }
+
+        initializeApp();
+    </script>
 </body>
 </html>
