@@ -5,6 +5,7 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto'); // Import crypto module for checksum
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -16,7 +17,18 @@ const ordersFile = 'limitOrders.json';
 const usersDataFile = 'usersData.json';
 
 let allUsersData = {};
+let usernameMap = {}; // Map to store username -> userId for quick lookup and uniqueness check
 let stockPricesCache = {};
+
+// Function to calculate SHA256 checksum of user's financial data
+const calculateChecksum = (userData) => {
+    // Only include financial data in the checksum to prevent issues with other properties
+    const dataToHash = {
+        cash: userData.cash,
+        portfolio: userData.portfolio
+    };
+    return crypto.createHash('sha256').update(JSON.stringify(dataToHash)).digest('hex');
+};
 
 const loadAllUsersData = () => {
     try {
@@ -26,32 +38,52 @@ const loadAllUsersData = () => {
                 const parsedData = JSON.parse(data);
                 if (typeof parsedData === 'object' && parsedData !== null) {
                     allUsersData = parsedData;
+                    // Rebuild usernameMap and ensure checksums exist for all users
+                    usernameMap = {};
+                    for (const userId in allUsersData) {
+                        const user = allUsersData[userId];
+                        if (user.username) {
+                            usernameMap[user.username.toLowerCase()] = userId;
+                        }
+                        // Add checksum if missing (for existing data from previous versions)
+                        if (!user.checksum) {
+                            user.checksum = calculateChecksum(user);
+                        }
+                    }
                     console.log('All users data loaded successfully.');
                 } else {
                     console.warn('usersData.json has an invalid format. Initializing with empty object.');
                     allUsersData = {};
-                    saveAllUsersData();
+                    usernameMap = {};
+                    saveAllUsersData(); // Save empty data
                 }
             } else {
-                console.warn('usersData.json is empty. Initializing with empty object.');
+                console.log('usersData.json not found. Creating with empty object.');
                 allUsersData = {};
-                saveAllUsersData();
+                usernameMap = {};
+                saveAllUsersData(); // Save empty data
             }
         } else {
             console.log('usersData.json not found. Creating with empty object.');
             allUsersData = {};
-            saveAllUsersData();
+            usernameMap = {};
+            saveAllUsersData(); // Save empty data
         }
     } catch (error) {
         console.error('Error loading all user data:', error);
         console.warn('Initializing all user data with empty object due to error.');
         allUsersData = {};
-        saveAllUsersData();
+        usernameMap = {};
+        saveAllUsersData(); // Save empty data
     }
 };
 
 const saveAllUsersData = () => {
     try {
+        // Recalculate checksums before saving to ensure consistency
+        for (const userId in allUsersData) {
+            allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
+        }
         fs.writeFileSync(usersDataFile, JSON.stringify(allUsersData, null, 2), 'utf8');
         console.log('All users data saved successfully.');
     } catch (error) {
@@ -93,6 +125,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend.html'));
 });
 
+// Endpoint to get/initialize user data, with username uniqueness check
 app.get('/api/user-data', (req, res) => {
     const userId = getUserId(req);
     const userName = getUserName(req);
@@ -101,32 +134,83 @@ app.get('/api/user-data', (req, res) => {
         return res.status(400).json({ error: 'User ID missing in headers.' });
     }
 
+    const normalizedNewUserName = userName ? userName.toLowerCase() : null;
+
+    // Case 1: New user or existing user with no username set yet
     if (!allUsersData[userId]) {
+        // Check for username uniqueness only if a username is provided
+        if (normalizedNewUserName && usernameMap[normalizedNewUserName]) {
+            return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
+        }
         allUsersData[userId] = {
             cash: 100000,
             portfolio: {},
-            username: userName || `User-${userId.substring(0, 4)}`
+            username: userName || `User-${userId.substring(0, 4)}` // Assign default if no username is provided
         };
+        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
+        usernameMap[allUsersData[userId].username.toLowerCase()] = userId; // Add to username map
         saveAllUsersData();
         console.log(`Initialized new user data for userId: ${userId} with username: ${allUsersData[userId].username}`);
-    } else if (userName && allUsersData[userId].username !== userName) {
-        allUsersData[userId].username = userName;
-        saveAllUsersData();
-        console.log(`Updated username for userId: ${userId} to ${userName}`);
     }
+    // Case 2: Existing user trying to update their username
+    else if (userName && allUsersData[userId].username !== userName) {
+        const oldUsername = allUsersData[userId].username;
+        const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
 
+        // Check for username uniqueness
+        if (normalizedNewUserName && usernameMap[normalizedNewUserName] && usernameMap[normalizedNewUserName] !== userId) {
+            return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
+        }
+
+        // Update username in user data and usernameMap
+        if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
+            delete usernameMap[normalizedOldUsername]; // Remove old username from map
+        }
+        allUsersData[userId].username = userName;
+        usernameMap[userName.toLowerCase()] = userId; // Add new username to map
+        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum after username change
+        saveAllUsersData();
+        console.log(`Updated username for userId: ${userId} from "${oldUsername}" to "${userName}"`);
+    } else if (!allUsersData[userId].username && userName) {
+        // User exists but previously had no username, now setting one
+        if (normalizedNewUserName && usernameMap[normalizedNewUserName]) {
+            return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
+        }
+        allUsersData[userId].username = userName;
+        usernameMap[userName.toLowerCase()] = userId;
+        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
+        saveAllUsersData();
+        console.log(`Set username for userId: ${userId} to "${userName}"`);
+    }
+    // For all other cases (e.g., existing user just fetching data, no username change)
     res.json(allUsersData[userId]);
 });
 
-app.post('/api/buy-stock', (req, res) => {
+// Middleware for anti-cheat checksum verification
+const verifyChecksum = (req, res, next) => {
     const userId = getUserId(req);
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
-    }
+    const clientChecksum = req.headers['x-user-checksum'];
+
     if (!allUsersData[userId]) {
-        return res.status(404).json({ error: 'User data not found for provided ID.' });
+        console.error(`Anti-cheat: User data not found for userId: ${userId}`);
+        return res.status(404).json({ error: 'User data not found for anti-cheat verification.' });
     }
 
+    const serverCalculatedChecksum = calculateChecksum(allUsersData[userId]);
+
+    if (serverCalculatedChecksum !== clientChecksum) {
+        console.warn(`Anti-cheat detected for user ${allUsersData[userId].username} (${userId})! Client checksum: ${clientChecksum}, Server checksum: ${serverCalculatedChecksum}`);
+        // Consider more severe actions here, e.g., resetting user data or flagging
+        return res.status(403).json({ error: 'Anti-cheat detected: Data mismatch. Transaction rejected. Your portfolio has been reset.' });
+        // Optional: Reset user data upon cheat detection
+        // allUsersData[userId] = { cash: 100000, portfolio: {}, username: allUsersData[userId].username, checksum: calculateChecksum({ cash: 100000, portfolio: {} }) };
+        // saveAllUsersData();
+    }
+    next(); // Proceed to the next middleware/route handler
+};
+
+app.post('/api/buy-stock', verifyChecksum, (req, res) => {
+    const userId = getUserId(req);
     const { symbol, amount, currentPrice } = req.body;
 
     if (!symbol || typeof amount !== 'number' || amount <= 0 || typeof currentPrice !== 'number' || currentPrice <= 0) {
@@ -138,22 +222,17 @@ app.post('/api/buy-stock', (req, res) => {
     if (allUsersData[userId].cash >= totalCost) {
         allUsersData[userId].cash -= totalCost;
         allUsersData[userId].portfolio[symbol] = (allUsersData[userId].portfolio[symbol] || 0) + amount;
+        
+        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum
         saveAllUsersData();
-        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
+        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio, checksum: allUsersData[userId].checksum });
     } else {
         res.status(400).json({ error: 'Insufficient cash.' });
     }
 });
 
-app.post('/api/sell-stock', (req, res) => {
+app.post('/api/sell-stock', verifyChecksum, (req, res) => {
     const userId = getUserId(req);
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
-    }
-    if (!allUsersData[userId]) {
-        return res.status(404).json({ error: 'User data not found for provided ID.' });
-    }
-
     const { symbol, amount, currentPrice } = req.body;
 
     if (!symbol || typeof amount !== 'number' || amount <= 0 || typeof currentPrice !== 'number' || currentPrice <= 0) {
@@ -165,11 +244,12 @@ app.post('/api/sell-stock', (req, res) => {
         allUsersData[userId].cash += totalRevenue;
         allUsersData[userId].portfolio[symbol] -= amount;
 
-        if (allUsersData[userId].portfolio[symbol] < 0.001) {
+        if (allUsersData[userId].portfolio[symbol] < 0.001) { // Clean up tiny remnants
             delete allUsersData[userId].portfolio[symbol];
         }
+        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum
         saveAllUsersData();
-        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
+        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio, checksum: allUsersData[userId].checksum });
     } else {
         res.status(400).json({ error: 'Insufficient stock or stock not held.' });
     }
@@ -336,7 +416,7 @@ const checkLimitOrders = async () => {
                             console.warn(`Limit sell order for ${order.symbol} at $${order.limitPrice} for user ${order.userId} failed due to insufficient stock.`);
                         }
                     }
-                    saveAllUsersData();
+                    saveAllUsersData(); // Save changes after trade
                     limitOrders.splice(i, 1);
                     saveLimitOrders();
                 }
@@ -349,7 +429,26 @@ const checkLimitOrders = async () => {
     }
 };
 
-setInterval(checkLimitOrders, 10000);
+setInterval(checkLimitOrders, 10000); // Check limit orders every 10 seconds
+
+// Periodic background checksum verification (anti-cheat)
+const checkAllUsersChecksums = () => {
+    console.log('Running periodic checksum verification for all users...');
+    for (const userId in allUsersData) {
+        const user = allUsersData[userId];
+        const storedChecksum = user.checksum;
+        const liveChecksum = calculateChecksum(user);
+        if (storedChecksum !== liveChecksum) {
+            console.error(`CRITICAL ANTI-CHEAT WARNING: User ${user.username} (${userId}) has a checksum mismatch in stored data! Stored: ${storedChecksum}, Live: ${liveChecksum}`);
+            // In a real application, you might want to:
+            // 1. Log this incident to a separate security log.
+            // 2. Temporarily suspend the user's account.
+            // 3. Reset their portfolio to a known good state.
+            // For this simulation, we'll just log an error.
+        }
+    }
+};
+setInterval(checkAllUsersChecksums, 300000); // Check all users' checksums every 5 minutes
 
 app.post('/limit-buy', (req, res) => {
     const userId = getUserId(req);
