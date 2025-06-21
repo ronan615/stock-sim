@@ -6,11 +6,11 @@
     <title>Investment Portfolio & Stock Trading</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0"></script>
-
     <style>
         :root {
             --primary-green: #00b894;
@@ -29,7 +29,6 @@
             --red-gradient-start: rgba(214, 48, 49, 0.6);
             --red-gradient-end: rgba(214, 48, 49, 0);
         }
-
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -44,6 +43,28 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Dark mode support */
+        body.dark {
+            --light-grey: #23272f;
+            --medium-grey: #2c313a;
+            --white: #23272f;
+            --text-color: #f3f6fa;
+            --border-color: #404550;
+            --shadow-light: 0 4px 10px rgba(0,0,0,0.15);
+            --shadow-medium: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        body.dark .container, body.dark .chart-container, body.dark .trading-actions, body.dark .nav-buttons {
+            background: var(--medium-grey);
+        }
+        body.dark input, body.dark .modal-content, body.dark .username-modal-content {
+            background: var(--white);
+            color: var(--text-color);
+        }
+        body.dark table th, body.dark table td {
+            background: var(--medium-grey) !important;
+            color: var(--text-color);
+        }
+
         #homepage, #stockTradingPage, #leaderboardPage {
             display: none;
             flex-grow: 1;
@@ -51,7 +72,6 @@
             transform: translateY(20px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
         }
-
         #homepage.active, #stockTradingPage.active, #leaderboardPage.active {
             opacity: 1;
             transform: translateY(0);
@@ -87,8 +107,10 @@
             border-radius: 10px;
             box-shadow: var(--shadow-light);
             max-width: fit-content;
+            position: sticky;
+            top: 0;
+            z-index: 900;
         }
-
         .nav-buttons button {
             background-color: var(--medium-grey);
             color: var(--text-color);
@@ -102,23 +124,44 @@
             box-shadow: none;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-
         .nav-buttons button:hover {
             background-color: #d1d1d1;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
         .nav-buttons button.active {
             background-color: var(--primary-green);
             color: var(--white);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 184, 148, 0.2);
         }
-
         .nav-buttons button.active:hover {
             background-color: var(--darker-green);
+        }
+
+        #darkModeToggle {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 9999;
+            background: var(--medium-grey);
+            color: var(--primary-green);
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            font-size: 1.3em;
+            cursor: pointer;
+            box-shadow: var(--shadow-light);
+            transition: background 0.2s, color 0.2s;
+        }
+        #darkModeToggle:hover {
+            background: var(--primary-green);
+            color: var(--white);
         }
 
         button {
@@ -136,18 +179,15 @@
             letter-spacing: 0;
             min-width: 100px;
         }
-
         button:hover {
             background-color: #d1d1d1;
             transform: translateY(-1px);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
         button:active {
             transform: translateY(0);
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
         }
-
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -170,7 +210,6 @@
             align-items: center;
             justify-content: center;
         }
-
         canvas {
             width: 100% !important;
             height: 100% !important;
@@ -189,14 +228,12 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             background-color: var(--white);
         }
-
         input[type="text"]:focus,
         input[type="number"]:focus {
             border-color: var(--primary-green);
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.2);
         }
-
         input[type="text"]::placeholder,
         input[type="number"]::placeholder {
             color: #999;
@@ -211,7 +248,6 @@
             color: var(--dark-grey);
             font-weight: 500;
         }
-
         .cash-display #cashdisplay-home,
         .cash-display #cashdisplay-trade {
             color: var(--darker-green);
@@ -230,30 +266,38 @@
             padding-bottom: 8px;
         }
 
-        .stock-category-list {
-            list-style-type: none;
-            padding: 0;
+        /* Card-based stock list */
+        .stock-category-cards {
             display: flex;
-            flex-wrap: wrap;
             gap: 10px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
             margin-bottom: 25px;
+            scroll-snap-type: x mandatory;
         }
-
-        .stock-category-list button {
-            background-color: #e6f7f0;
-            color: var(--darker-green);
-            padding: 8px 14px;
-            font-size: 14px;
-            border-radius: 25px;
-            font-weight: 500;
-            box-shadow: none;
-            min-width: unset;
+        .stock-card {
+            background: var(--white);
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+            padding: 10px 18px;
+            cursor: pointer;
+            min-width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1em;
+            transition: box-shadow 0.2s, background 0.2s;
+            scroll-snap-align: start;
+            border: 2px solid transparent;
         }
-
-        .stock-category-list button:hover {
-            background-color: #d0f0e0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        .stock-card:focus {
+            border: 2px solid var(--primary-green);
+            outline: none;
+        }
+        .stock-card:hover {
+            box-shadow: var(--shadow-medium);
+            background: #e3faf6;
         }
 
         .trading-actions {
@@ -268,7 +312,6 @@
             box-shadow: var(--shadow-light);
             border: 1px solid var(--border-color);
         }
-
         .trading-actions h2 {
             width: 100%;
             margin-bottom: 15px;
@@ -277,41 +320,34 @@
             padding-bottom: 10px;
             border-bottom: 1px dashed var(--medium-grey);
         }
-
         .trading-actions .input-group {
             display: flex;
             gap: 10px;
             flex-grow: 1;
             align-items: center;
         }
-
         .trading-actions .input-group input {
             flex-grow: 1;
             width: auto;
             margin: 0;
         }
-
         .trading-actions button {
             flex-shrink: 0;
             max-width: 120px;
             font-size: 15px;
             padding: 10px 20px;
         }
-
         .trading-actions .buy-button {
             background-color: var(--primary-green);
             color: var(--white);
         }
-
         .trading-actions .buy-button:hover {
             background-color: var(--darker-green);
         }
-
         .trading-actions .sell-button {
             background-color: var(--primary-red);
             color: var(--white);
         }
-
         .trading-actions .sell-button:hover {
             background-color: #cc4000;
         }
@@ -329,6 +365,26 @@
             line-height: 1.4;
         }
 
+        /* Loading Spinner */
+        #spinner-overlay {
+            display:none;
+            position:fixed;
+            left:0;top:0;width:100vw;height:100vh;
+            z-index:11111;
+            align-items:center;
+            justify-content:center;
+            background:rgba(0,0,0,0.08);
+        }
+        #spinner-overlay .spin {
+            border: 6px solid #e9ecef;
+            border-top: 6px solid var(--primary-green);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -342,7 +398,6 @@
             justify-content: center;
             animation: fadeIn 0.3s ease-out forwards;
         }
-
         .modal-content {
             background-color: var(--white);
             padding: 35px;
@@ -356,14 +411,12 @@
             position: relative;
             animation: slideIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
         }
-
         .modal-content p {
             margin-bottom: 25px;
             font-size: 1.1em;
             color: var(--text-color);
             line-height: 1.5;
         }
-
         .modal-content button {
             background-color: var(--primary-green);
             color: white;
@@ -374,21 +427,13 @@
             font-size: 1em;
             transition: background-color 0.2s ease, transform 0.1s ease;
         }
-
         .modal-content button:hover {
             background-color: var(--darker-green);
             transform: translateY(-1px);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { transform: translate(-50%, -60%); opacity: 0; }
-            to { transform: translate(-50%, -50%); opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translate(-50%, -60%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
 
         #leaderboardPage table {
             width: 100%;
@@ -398,13 +443,11 @@
             border-radius: 8px;
             overflow: hidden;
         }
-
         #leaderboardPage th, #leaderboardPage td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-
         #leaderboardPage th {
             background-color: var(--medium-grey);
             color: var(--dark-grey);
@@ -412,20 +455,16 @@
             text-transform: uppercase;
             font-size: 0.9em;
         }
-
         #leaderboardPage tr:nth-child(even) {
             background-color: #f8f8f8;
         }
-
         #leaderboardPage tr:hover {
             background-color: #f0f0f0;
         }
-
         #leaderboardPage td:last-child {
             font-weight: 600;
             color: var(--primary-green);
         }
-
         #leaderboardPage h1 {
             text-align: center;
         }
@@ -442,7 +481,6 @@
             align-items: center;
             z-index: 1001;
         }
-
         .username-modal-content {
             background-color: white;
             padding: 40px;
@@ -452,17 +490,14 @@
             width: 90%;
             max-width: 400px;
         }
-
         .username-modal-content h2 {
             margin-top: 0;
             color: var(--dark-grey);
         }
-
         .username-modal-content input[type="text"] {
             width: calc(100% - 30px);
             margin-bottom: 20px;
         }
-
         .username-modal-content button {
             width: auto;
             padding: 12px 30px;
@@ -470,11 +505,11 @@
             color: white;
             font-weight: 600;
         }
-
         .username-modal-content button:hover {
             background-color: var(--darker-green);
         }
 
+        /* Responsive tweaks */
         @media (max-width: 992px) {
             .container {
                 padding: 25px;
@@ -488,7 +523,6 @@
                 max-width: 100%;
             }
         }
-
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -536,19 +570,17 @@
                 font-size: 1.5em;
                 margin-bottom: 10px;
             }
-            .stock-category-list {
-                justify-content: center;
+            .stock-category-cards {
                 gap: 6px;
             }
-            .stock-category-list button {
-                padding: 6px 10px;
+            .stock-card {
+                padding: 8px 10px;
                 font-size: 13px;
             }
             #leaderboardPage th, #leaderboardPage td {
                 padding: 8px 10px;
             }
         }
-
         @media (max-width: 480px) {
             .container {
                 margin: 10px auto;
@@ -574,11 +606,13 @@
     </style>
 </head>
 <body>
+    <button id="darkModeToggle" aria-label="Toggle dark mode">🌙</button>
+    <div id="spinner-overlay"><div class="spin"></div></div>
 
     <div class="nav-buttons">
-        <button id="homeNavBtn" onclick="showSection('homepage')">Home</button>
-        <button id="tradeNavBtn" onclick="showSection('stockTradingPage')">Trade Stocks</button>
-        <button id="leaderboardNavBtn" onclick="showSection('leaderboardPage')">Leaderboard</button>
+        <button id="homeNavBtn" onclick="showSection('homepage')" aria-label="Home"><i class="fa fa-home"></i> Home</button>
+        <button id="tradeNavBtn" onclick="showSection('stockTradingPage')" aria-label="Trade Stocks"><i class="fa fa-chart-line"></i> Trade Stocks</button>
+        <button id="leaderboardNavBtn" onclick="showSection('leaderboardPage')" aria-label="Leaderboard"><i class="fa fa-trophy"></i> Leaderboard</button>
     </div>
 
     <div id="homepage" class="container">
@@ -594,127 +628,120 @@
         <h2 class="section-heading">Explore Stocks</h2>
 
         <h3 class="stock-category-heading">Technology & Growth Stocks</h3>
-        <ul class="stock-category-list">
-            <li><button onclick="loadStock('AAPL')">AAPL</button></li>
-            <li><button onclick="loadStock('NVDA')">NVDA</button></li>
-            <li><button onclick="loadStock('AMZN')">AMZN</button></li>
-            <li><button onclick="loadStock('GOOGL')">GOOGL</button></li>
-            <li><button onclick="loadStock('MSFT')">MSFT</button></li>
-            <li><button onclick="loadStock('FB')">FB</button></li>
-            <li><button onclick="loadStock('NFLX')">NFLX</button></li>
-            <li><button onclick="loadStock('PYPL')">PYPL</button></li>
-            <li><button onclick="loadStock('CRM')">CRM</button></li>
-            <li><button onclick="loadStock('INTC')">INTC</button></li>
-            <li><button onclick="loadStock('CSCO')">CSCO</button></li>
-            <li><button onclick="loadStock('QCOM')">QCOM</button></li>
-            <li><button onclick="loadStock('AMD')">AMD</button></li>
-            <li><button onclick="loadStock('SQ')">SQ</button></li>
-            <li><button onclick="loadStock('PINS')">PINS</button></li>
-            <li><button onclick="loadStock('ZM')">ZM</button></li>
-            <li><button onclick="loadStock('DOCU')">DOCU</button></li>
-            <li><button onclick="loadStock('ROKU')">ROKU</button></li>
-            <li><button onclick="loadStock('DDOG')">DDOG</button></li>
-            <li><button onclick="loadStock('CRWD')">CRWD</button></li>
-            <li><button onclick="loadStock('NET')">NET</button></li>
-            <li><button onclick="loadStock('OKTA')">OKTA</button></li>
-            <li><button onclick="loadStock('ZS')">ZS</button></li>
-            <li><button onclick="loadStock('SNOW')">SNOW</button></li>
-        </ul>
-
-        <h3 class="stock-category-heading">Automotive & Mobility</h3>
-        <ul class="stock-category-list">
-            <li><button onclick="loadStock('TSLA')">TSLA</button></li>
-            <li><button onclick="loadStock('RIVN')">RIVN</button></li>
-            <li><button onclick="loadStock('CHPT')">CHPT</button></li>
-            <li><button onclick="loadStock('UBER')">UBER</button></li>
-            <li><button onclick="loadStock('LYFT')">LYFT</button></li>
-        </ul>
-
-        <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
-        <ul class="stock-category-list">
-            <li><button onclick="loadStock('SPY')">SPY</button></li>
-            <li><button onclick="loadStock('QQQ')">QQQ</button></li>
-            <li><button onclick="loadStock('DIA')">DIA</button></li>
-            <li><button onclick="loadStock('IVV')">IVV</button></li>
-            <li><button onclick="loadStock('VOO')">VOO</button></li>
-            <li><button onclick="loadStock('VTI')">VTI</button></li>
-            <li><button onclick="loadStock('ARKK')">ARKK</button></li>
-            <li><button onclick="loadStock('SMH')">SMH</button></li>
-            <li><button onclick="loadStock('XLK')">XLK</button></li>
-            <li><button onclick="loadStock('GLD')">GLD</button></li>
-            <li><button onclick="loadStock('SLV')">SLV</button></li>
-            <li><button onclick="loadStock('USO')">USO</button></li>
-            <li><button onclick="loadStock('TLT')">TLT</button></li>
-            <li><button onclick="loadStock('BND')">BND</button></li>
-            <li><button onclick="loadStock('SOXS')">SOXS</button></li>
-            <li><button onclick="loadStock('SOXL')">SOXL</button></li>
-        </ul>
-
-        <h3 class="stock-category-heading">Recent IPOs</h3>
-        <ul class="stock-category-list">
-            <li><button onclick="loadStock('ARM')">ARM</button></li>
-            <li><button onclick="loadStock('HOOD')">HOOD</button></li>
-            <li><button onclick="loadStock('ABNB')">ABNB</button></li>
-            <li><button onclick="loadStock('SNOW')">SNOW</button></li>
-            <li><button onclick="loadStock('RBLX')">RBLX</button></li>
-            <li><button onclick="loadStock('COIN')">COIN</button></li>
-            <li><button onclick="loadStock('U')">U</button></li>
-        </ul>
-
-        <h3 class="stock-category-heading">Other / Emerging Markets</h3>
-        <ul class="stock-category-list">
-            <li><button onclick="loadStock('AIRO')">AIRO</button></li>
-            <li><button onclick="loadStock('SFIX')">SFIX</button></li>
-            <li><button onclick="loadStock('PLTR')">PLTR</button></li>
-            <li><button onclick="loadStock('UPST')">UPST</button></li>
-        </ul>
-
-        <div style="display: flex; gap: 15px; margin-top: 30px; align-items: center;">
-            <input type="text" id="stockSearch" placeholder="Search stock symbol (e.g., TSLA)">
-            <button onclick="searchStockmainpage()">Search</button>
+        <div class="stock-category-cards">
+            <div class="stock-card" tabindex="0" onclick="loadStock('AAPL')" aria-label="Trade AAPL">AAPL</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('NVDA')" aria-label="Trade NVDA">NVDA</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('AMZN')" aria-label="Trade AMZN">AMZN</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('GOOGL')" aria-label="Trade GOOGL">GOOGL</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('MSFT')" aria-label="Trade MSFT">MSFT</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('FB')" aria-label="Trade FB">FB</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('NFLX')" aria-label="Trade NFLX">NFLX</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('PYPL')" aria-label="Trade PYPL">PYPL</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('CRM')" aria-label="Trade CRM">CRM</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('INTC')" aria-label="Trade INTC">INTC</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('CSCO')" aria-label="Trade CSCO">CSCO</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('QCOM')" aria-label="Trade QCOM">QCOM</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('AMD')" aria-label="Trade AMD">AMD</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SQ')" aria-label="Trade SQ">SQ</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('PINS')" aria-label="Trade PINS">PINS</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('ZM')" aria-label="Trade ZM">ZM</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('DOCU')" aria-label="Trade DOCU">DOCU</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('ROKU')" aria-label="Trade ROKU">ROKU</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('DDOG')" aria-label="Trade DDOG">DDOG</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('CRWD')" aria-label="Trade CRWD">CRWD</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('NET')" aria-label="Trade NET">NET</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('OKTA')" aria-label="Trade OKTA">OKTA</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('ZS')" aria-label="Trade ZS">ZS</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SNOW')" aria-label="Trade SNOW">SNOW</div>
         </div>
 
+        <h3 class="stock-category-heading">Automotive & Mobility</h3>
+        <div class="stock-category-cards">
+            <div class="stock-card" tabindex="0" onclick="loadStock('TSLA')" aria-label="Trade TSLA">TSLA</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('RIVN')" aria-label="Trade RIVN">RIVN</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('CHPT')" aria-label="Trade CHPT">CHPT</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('UBER')" aria-label="Trade UBER">UBER</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('LYFT')" aria-label="Trade LYFT">LYFT</div>
+        </div>
+
+        <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
+        <div class="stock-category-cards">
+            <div class="stock-card" tabindex="0" onclick="loadStock('SPY')" aria-label="Trade SPY">SPY</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('QQQ')" aria-label="Trade QQQ">QQQ</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('DIA')" aria-label="Trade DIA">DIA</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('IVV')" aria-label="Trade IVV">IVV</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('VOO')" aria-label="Trade VOO">VOO</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('VTI')" aria-label="Trade VTI">VTI</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('ARKK')" aria-label="Trade ARKK">ARKK</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SMH')" aria-label="Trade SMH">SMH</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('XLK')" aria-label="Trade XLK">XLK</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('GLD')" aria-label="Trade GLD">GLD</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SLV')" aria-label="Trade SLV">SLV</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('USO')" aria-label="Trade USO">USO</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('TLT')" aria-label="Trade TLT">TLT</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('BND')" aria-label="Trade BND">BND</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SOXS')" aria-label="Trade SOXS">SOXS</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SOXL')" aria-label="Trade SOXL">SOXL</div>
+        </div>
+
+        <h3 class="stock-category-heading">Recent IPOs</h3>
+        <div class="stock-category-cards">
+            <div class="stock-card" tabindex="0" onclick="loadStock('ARM')" aria-label="Trade ARM">ARM</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('HOOD')" aria-label="Trade HOOD">HOOD</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('ABNB')" aria-label="Trade ABNB">ABNB</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SNOW')" aria-label="Trade SNOW">SNOW</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('RBLX')" aria-label="Trade RBLX">RBLX</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('COIN')" aria-label="Trade COIN">COIN</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('U')" aria-label="Trade U">U</div>
+        </div>
+
+        <h3 class="stock-category-heading">Other / Emerging Markets</h3>
+        <div class="stock-category-cards">
+            <div class="stock-card" tabindex="0" onclick="loadStock('AIRO')" aria-label="Trade AIRO">AIRO</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('SFIX')" aria-label="Trade SFIX">SFIX</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('PLTR')" aria-label="Trade PLTR">PLTR</div>
+            <div class="stock-card" tabindex="0" onclick="loadStock('UPST')" aria-label="Trade UPST">UPST</div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 30px; align-items: center;">
+            <input type="text" id="stockSearch" placeholder="Search stock symbol (e.g., TSLA)" aria-label="Search stock symbol">
+            <button onclick="searchStockmainpage()" aria-label="Search for stock"><i class="fa fa-search"></i> Search</button>
+        </div>
     </div>
 
     <div id="stockTradingPage" class="container">
         <h1 class="section-heading">Stock Trading</h1>
-        
         <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center;">
-            <input type="text" id="stockSymbol" placeholder="Enter stock symbol (e.g., AAPL)">
-            <button onclick="searchStock()">Load Chart</button>
+            <input type="text" id="stockSymbol" placeholder="Enter stock symbol (e.g., AAPL)" aria-label="Stock symbol">
+            <button onclick="searchStock()" aria-label="Load Chart"><i class="fa fa-search"></i> Load Chart</button>
         </div>
-        
         <p id="error"></p>
-
         <div class="nav-buttons time-frame-buttons" style="margin-top: 0; margin-bottom: 25px; box-shadow: none; background-color: transparent;">
-            <button onclick="changeTimeframe('live')">Live</button>
-            <button onclick="changeTimeframe('1M')">1M</button>
-            <button onclick="changeTimeframe('3M')">3M</button>
-            <button onclick="changeTimeframe('6M')">6M</button>
-            <button onclick="changeTimeframe('1Y')">1Y</button>
-            <button onclick="changeTimeframe('2Y')">2Y</button>
-            <button onclick="changeTimeframe('5Y')">5Y</button>
-            <button onclick="changeTimeframe('ALL')">ALL</button>
+            <button onclick="changeTimeframe('live')" aria-label="Live">Live</button>
+            <button onclick="changeTimeframe('1M')" aria-label="1 Month">1M</button>
+            <button onclick="changeTimeframe('3M')" aria-label="3 Months">3M</button>
+            <button onclick="changeTimeframe('6M')" aria-label="6 Months">6M</button>
+            <button onclick="changeTimeframe('1Y')" aria-label="1 Year">1Y</button>
+            <button onclick="changeTimeframe('2Y')" aria-label="2 Years">2Y</button>
+            <button onclick="changeTimeframe('5Y')" aria-label="5 Years">5Y</button>
+            <button onclick="changeTimeframe('ALL')" aria-label="All">ALL</button>
         </div>
-
         <div class="chart-container">
             <canvas id="stockChart"></canvas>
         </div>
-
         <div class="trading-actions">
             <h2>Perform Trades</h2>
             <div class="cash-display" style="width: 100%; justify-content: center; margin-bottom: 20px;">
                 <h4>Available Cash:</h4>
                 <h4 id="cashdisplay-trade">$0.00</h4>
             </div>
-            
             <div class="input-group">
-                <input type="number" id="buyAmount" placeholder="Shares to Buy">
-                <button class="buy-button" onclick="buyStock()">Buy</button>
+                <input type="number" id="buyAmount" placeholder="Shares to Buy" aria-label="Shares to Buy">
+                <button class="buy-button" onclick="buyStock()" aria-label="Buy Stock"><i class="fa fa-arrow-up"></i> Buy</button>
             </div>
             <div class="input-group">
-                <input type="number" id="sellAmount" placeholder="Shares to Sell">
-                <button class="sell-button" onclick="sellStock()">Sell</button>
+                <input type="number" id="sellAmount" placeholder="Shares to Sell" aria-label="Shares to Sell">
+                <button class="sell-button" onclick="sellStock()" aria-label="Sell Stock"><i class="fa fa-arrow-down"></i> Sell</button>
             </div>
         </div>
     </div>
@@ -745,6 +772,26 @@
         let portfolio = {};
         let userId = localStorage.getItem('stockAppUserId');
         let username = localStorage.getItem('stockAppUsername');
+
+        // Dark mode toggle
+        const darkToggle = document.getElementById('darkModeToggle');
+        darkToggle.onclick = () => {
+            document.body.classList.toggle('dark');
+            darkToggle.textContent = document.body.classList.contains('dark') ? "☀️" : "🌙";
+            localStorage.setItem('darkMode', document.body.classList.contains('dark') ? '1' : '0');
+        };
+        if(localStorage.getItem('darkMode') === '1') {
+            document.body.classList.add('dark');
+            darkToggle.textContent = "☀️";
+        }
+
+        // Spinner helpers
+        function showSpinner() {
+            document.getElementById('spinner-overlay').style.display = 'flex';
+        }
+        function hideSpinner() {
+            document.getElementById('spinner-overlay').style.display = 'none';
+        }
 
         function showUsernamePrompt() {
             const modalOverlay = document.createElement('div');
@@ -782,6 +829,7 @@
         }
 
         async function fetchUserData() {
+            showSpinner();
             try {
                 const response = await fetch('http://localhost:5001/api/user-data', {
                     headers: {
@@ -806,9 +854,11 @@
                 console.error('Error fetching user data:', error);
                 showModal('Error fetching user data: ' + error.message);
             }
+            hideSpinner();
         }
 
         async function fetchLeaderboardData() {
+            showSpinner();
             try {
                 const response = await fetch('http://localhost:5001/api/leaderboard');
                 if (!response.ok) {
@@ -828,6 +878,7 @@
                 console.error('Error fetching leaderboard data:', error);
                 showModal('Error fetching leaderboard: ' + error.message);
             }
+            hideSpinner();
         }
 
         function createStockChart() {
@@ -849,7 +900,6 @@
                                 const chart = context.chart;
                                 const { ctx, chartArea } = chart;
                                 if (!chartArea) return null;
-
                                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                                 gradient.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--gradient-end'));
                                 gradient.addColorStop(0.5, getComputedStyle(document.documentElement).getPropertyValue('--gradient-start'));
@@ -860,7 +910,6 @@
                                 const chart = context.chart;
                                 const { ctx, chartArea } = chart;
                                 if (!chartArea) return null;
-
                                 const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                                 gradient.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--red-gradient-end'));
                                 gradient.addColorStop(0.5, getComputedStyle(document.documentElement).getPropertyValue('--red-gradient-start'));
@@ -881,9 +930,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
@@ -901,12 +948,9 @@
                                 },
                                 label: function(context) {
                                     let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null)
                                         label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                    }
                                     return label;
                                 }
                             }
@@ -915,30 +959,17 @@
                     scales: {
                         x: {
                             type: 'time',
-                            time: {
-                                unit: 'day',
-                                tooltipFormat: 'MMM dd,yyyy HH:mm'
-                            },
-                            grid: {
-                                display: false,
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: 'var(--dark-grey)',
-                                font: { size: 11 }
-                            }
+                            time: { unit: 'day', tooltipFormat: 'MMM dd,yyyy HH:mm' },
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: 'var(--dark-grey)', font: { size: 11 } }
                         },
                         y: {
                             beginAtZero: false,
-                            grid: {
-                                color: 'var(--border-color)',
-                                drawBorder: false,
-                                borderDash: [3, 3]
-                            },
+                            grid: { color: 'var(--border-color)', drawBorder: false, borderDash: [3, 3] },
                             ticks: {
                                 color: 'var(--dark-grey)',
                                 font: { size: 11 },
-                                callback: function(value, index, values) {
+                                callback: function(value) {
                                     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
                                 }
                             }
@@ -967,10 +998,7 @@
                         legend: {
                             position: 'right',
                             labels: {
-                                font: {
-                                    size: 14,
-                                    family: 'Inter',
-                                },
+                                font: { size: 14, family: 'Inter' },
                                 color: 'var(--text-color)',
                                 boxWidth: 20,
                                 padding: 15
@@ -986,9 +1014,7 @@
                             callbacks: {
                                 label: function(context) {
                                     let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
+                                    if (label) label += ': ';
                                     if (context.parsed !== null) {
                                         const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
                                         const percentage = (context.parsed / total * 100).toFixed(2);
@@ -999,19 +1025,13 @@
                             }
                         }
                     },
-                    layout: {
-                        padding: {
-                            left: 0,
-                            right: 50,
-                            top: 0,
-                            bottom: 0
-                        }
-                    }
+                    layout: { padding: { left: 0, right: 50, top: 0, bottom: 0 } }
                 }
             });
         }
 
         async function fetchStockData() {
+            showSpinner();
             const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
             try {
                 const response = await fetch(apiUrl);
@@ -1032,9 +1052,11 @@
                 document.getElementById('error').style.display = 'block';
                 changeTimeframe(timeframe);
             }
+            hideSpinner();
         }
 
         async function fetchStockDatalive() {
+            showSpinner();
             const apiUrl = `http://localhost:5001/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
             try {
                 const response = await fetch(apiUrl);
@@ -1051,6 +1073,7 @@
                 document.getElementById('error').style.display = 'block';
                 changeTimeframe(timeframe);
             }
+            hideSpinner();
         }
 
         function updateChart(timestamps, prices) {
@@ -1068,9 +1091,7 @@
                 fetchStockData();
             }
         }
-
         let liveinterval = 0;
-
         function changeTimeframe(newTimeframe) {
             if (newTimeframe === "live" && liveinterval === 0) {
                 timeframe = newTimeframe;
@@ -1088,11 +1109,8 @@
                 liveinterval = 0;
             }
         }
-        
         function resetChart() {
-            if (stockChart) {
-                stockChart.destroy();
-            }
+            if (stockChart) stockChart.destroy();
             createStockChart();
         }
 
@@ -1102,13 +1120,12 @@
                 showModal('Invalid amount. Please enter a positive number.');
                 return;
             }
-
             const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
             if (!currentPrice) {
                 showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
                 return;
             }
-
+            showSpinner();
             try {
                 const response = await fetch('http://localhost:5001/api/buy-stock', {
                     method: 'POST',
@@ -1119,7 +1136,6 @@
                     },
                     body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
                 });
-
                 const result = await response.json();
                 if (response.ok) {
                     cash = result.cash;
@@ -1135,6 +1151,7 @@
                 console.error('Error buying stock:', error);
                 showModal('Error communicating with server: ' + error.message);
             }
+            hideSpinner();
         }
 
         async function sellStock() {
@@ -1143,13 +1160,12 @@
                 showModal('Invalid amount. Please enter a positive number.');
                 return;
             }
-
             const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
             if (!currentPrice) {
                 showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
                 return;
             }
-
+            showSpinner();
             try {
                 const response = await fetch('http://localhost:5001/api/sell-stock', {
                     method: 'POST',
@@ -1160,7 +1176,6 @@
                     },
                     body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
                 });
-
                 const result = await response.json();
                 if (response.ok) {
                     cash = result.cash;
@@ -1176,6 +1191,7 @@
                 console.error('Error selling stock:', error);
                 showModal('Error communicating with server: ' + error.message);
             }
+            hideSpinner();
         }
 
         function updatePortfolioChart() {
@@ -1206,16 +1222,12 @@
             document.querySelectorAll('.nav-buttons button').forEach(btn => {
                 btn.classList.remove('active');
             });
-
             document.getElementById(sectionId).classList.add('active');
             document.getElementById(sectionId).style.display = 'block';
-
             if (sectionId === 'homepage') {
                 document.getElementById('homeNavBtn').classList.add('active');
                 fetchUserData();
-                if (!portfolioChart) {
-                    createPortfolioChart();
-                }
+                if (!portfolioChart) { createPortfolioChart(); }
             } else if (sectionId === 'stockTradingPage') {
                 document.getElementById('tradeNavBtn').classList.add('active');
                 fetchUserData();
@@ -1229,6 +1241,7 @@
                 document.getElementById('leaderboardNavBtn').classList.add('active');
                 fetchLeaderboardData();
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function searchStockmainpage() {
@@ -1238,19 +1251,15 @@
         function showModal(message) {
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
-
             const modalContent = document.createElement('div');
             modalContent.className = 'modal-content';
-
             const messagePara = document.createElement('p');
             messagePara.textContent = message;
-
             const closeButton = document.createElement('button');
             closeButton.textContent = 'OK';
             closeButton.onclick = () => {
                 document.body.removeChild(modal);
             };
-
             modalContent.appendChild(messagePara);
             modalContent.appendChild(closeButton);
             modal.appendChild(modalContent);
@@ -1269,11 +1278,20 @@
                 showUsernamePrompt();
             } else {
                 await fetchUserData();
-                showSection('homepage'); // Ensure it starts on the homepage
+                showSection('homepage');
             }
         }
-
         initializeApp();
+
+        // Keyboard accessibility for cards
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.stock-card').forEach(card => {
+                card.setAttribute('tabindex', '0');
+                card.onkeydown = (e) => {
+                    if(e.key === 'Enter' || e.key === ' ') card.click();
+                };
+            });
+        });
     </script>
 </body>
 </html>
