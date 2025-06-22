@@ -1,7 +1,9 @@
 {
-  "099b4b69-fe40-442f-94e0-c5c4a8fef568": {
-    "cash": 100000,
-    "portfolio": {},
+  "069202c2-d383-4fb9-8293-3b58efe7c6bd": {
+    "cash": 79900,
+    "portfolio": {
+      "AAPL": 100
+    },
     "username": "Ronan"
   }
 }

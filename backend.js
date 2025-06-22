@@ -107,7 +107,16 @@ app.get('/', (req, res) => {
 
 app.get('/api/user-data', (req, res) => {
     const userId = getUserId(req);
-    const userName = getUserName(req);
+    let userName = getUserName(req);
+
+    if (typeof userName === 'string' && (userName.toLowerCase() === 'null' || userName.toLowerCase() === 'undefined')) {
+        userName = null;
+    } else if (typeof userName === 'string') {
+        userName = userName.trim();
+    } else {
+        userName = null;
+    }
+
 
     if (!userId) {
         return res.status(400).json({ error: 'User ID missing in headers.' });
@@ -203,6 +212,49 @@ app.post('/api/sell-stock', (req, res) => {
         res.status(400).json({ error: 'Insufficient stock or stock not held.' });
     }
 });
+
+// New endpoint to change username
+app.post('/api/change-username', (req, res) => {
+    const userId = getUserId(req);
+    const { newUsername } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID missing in headers.' });
+    }
+    if (!newUsername || typeof newUsername !== 'string' || newUsername.trim() === '') {
+        return res.status(400).json({ error: 'Invalid new username provided.' });
+    }
+
+    const trimmedNewUsername = newUsername.trim();
+    const normalizedNewUsername = trimmedNewUsername.toLowerCase();
+
+    // Check if the new username is already taken by another user
+    if (usernameMap[normalizedNewUsername] && usernameMap[normalizedNewUsername] !== userId) {
+        return res.status(409).json({ error: 'This username is already taken. Please choose a different one.' });
+    }
+
+    // Check if the userId exists
+    if (!allUsersData[userId]) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const oldUsername = allUsersData[userId].username;
+    const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
+
+    // Update username in allUsersData
+    allUsersData[userId].username = trimmedNewUsername;
+
+    // Update usernameMap
+    if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
+        delete usernameMap[normalizedOldUsername];
+    }
+    usernameMap[normalizedNewUsername] = userId;
+
+    saveAllUsersData();
+    console.log(`User ${userId} changed username from "${oldUsername}" to "${trimmedNewUsername}"`);
+    res.json({ success: true, message: `Username successfully changed to ${trimmedNewUsername}.` });
+});
+
 
 app.get('/stock-data', async (req, res) => {
     const symbol = req.query.symbol || 'AAPL';
@@ -440,7 +492,7 @@ app.post('/limit-sell', (req, res) => {
     }
     limitOrders.push({ userId, type: 'sell', symbol, limitPrice, amount });
     saveLimitOrders();
-    res.json({ success: true, message: `Limit sell order added for ${symbol} for ${amount} shares at $${limitPrice}` });
+    res.json({ success: true, message: `    Limit sell order added for ${symbol} for ${amount} shares at $${limitPrice}` });
 });
 
 app.listen(port, () => {
