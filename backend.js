@@ -5,7 +5,6 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto'); // Import crypto module for checksum
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -17,18 +16,8 @@ const ordersFile = 'limitOrders.json';
 const usersDataFile = 'usersData.json';
 
 let allUsersData = {};
-let usernameMap = {}; // Map to store username -> userId for quick lookup and uniqueness check
+let usernameMap = {};
 let stockPricesCache = {};
-
-// Function to calculate SHA256 checksum of user's financial data
-const calculateChecksum = (userData) => {
-    // Only include financial data in the checksum to prevent issues with other properties
-    const dataToHash = {
-        cash: userData.cash,
-        portfolio: userData.portfolio
-    };
-    return crypto.createHash('sha256').update(JSON.stringify(dataToHash)).digest('hex');
-};
 
 const loadAllUsersData = () => {
     try {
@@ -38,16 +27,11 @@ const loadAllUsersData = () => {
                 const parsedData = JSON.parse(data);
                 if (typeof parsedData === 'object' && parsedData !== null) {
                     allUsersData = parsedData;
-                    // Rebuild usernameMap and ensure checksums exist for all users
                     usernameMap = {};
                     for (const userId in allUsersData) {
                         const user = allUsersData[userId];
                         if (user.username) {
                             usernameMap[user.username.toLowerCase()] = userId;
-                        }
-                        // Add checksum if missing (for existing data from previous versions)
-                        if (!user.checksum) {
-                            user.checksum = calculateChecksum(user);
                         }
                     }
                     console.log('All users data loaded successfully.');
@@ -55,35 +39,31 @@ const loadAllUsersData = () => {
                     console.warn('usersData.json has an invalid format. Initializing with empty object.');
                     allUsersData = {};
                     usernameMap = {};
-                    saveAllUsersData(); // Save empty data
+                    saveAllUsersData();
                 }
             } else {
-                console.log('usersData.json not found. Creating with empty object.');
+                console.log('usersData.json is empty. Initializing with empty object.');
                 allUsersData = {};
                 usernameMap = {};
-                saveAllUsersData(); // Save empty data
+                saveAllUsersData();
             }
         } else {
             console.log('usersData.json not found. Creating with empty object.');
             allUsersData = {};
             usernameMap = {};
-            saveAllUsersData(); // Save empty data
+            saveAllUsersData();
         }
     } catch (error) {
         console.error('Error loading all user data:', error);
         console.warn('Initializing all user data with empty object due to error.');
         allUsersData = {};
         usernameMap = {};
-        saveAllUsersData(); // Save empty data
+        saveAllUsersData();
     }
 };
 
 const saveAllUsersData = () => {
     try {
-        // Recalculate checksums before saving to ensure consistency
-        for (const userId in allUsersData) {
-            allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
-        }
         fs.writeFileSync(usersDataFile, JSON.stringify(allUsersData, null, 2), 'utf8');
         console.log('All users data saved successfully.');
     } catch (error) {
@@ -125,7 +105,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend.html'));
 });
 
-// Endpoint to get/initialize user data, with username uniqueness check
 app.get('/api/user-data', (req, res) => {
     const userId = getUserId(req);
     const userName = getUserName(req);
@@ -136,80 +115,52 @@ app.get('/api/user-data', (req, res) => {
 
     const normalizedNewUserName = userName ? userName.toLowerCase() : null;
 
-    // Case 1: New user or existing user with no username set yet
-    if (!allUsersData[userId]) {
-        // Check for username uniqueness only if a username is provided
+    if (allUsersData[userId]) {
+        if (!userName || userName.trim() === '') {
+            const oldUsername = allUsersData[userId].username;
+            const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
+            if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
+                delete usernameMap[normalizedOldUsername];
+            }
+            delete allUsersData[userId];
+            saveAllUsersData();
+            console.log(`Deleted user data for userId: ${userId} due to invalid/missing username in request.`);
+            return res.status(401).json({ error: 'Your user session is invalid. Please restart the app or set a new username.' });
+        }
+
+        if (allUsersData[userId].username !== userName) {
+            const oldUsername = allUsersData[userId].username;
+            const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
+
+            if (normalizedNewUserName && usernameMap[normalizedNewUserName] && usernameMap[normalizedNewUserName] !== userId) {
+                return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
+            }
+
+            if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
+                delete usernameMap[normalizedOldUsername];
+            }
+            allUsersData[userId].username = userName;
+            usernameMap[userName.toLowerCase()] = userId;
+            saveAllUsersData();
+            console.log(`Updated username for userId: ${userId} from "${oldUsername}" to "${userName}"`);
+        }
+    } else {
         if (normalizedNewUserName && usernameMap[normalizedNewUserName]) {
             return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
         }
         allUsersData[userId] = {
             cash: 100000,
             portfolio: {},
-            username: userName || `User-${userId.substring(0, 4)}` // Assign default if no username is provided
+            username: userName || `User-${userId.substring(0, 4)}`
         };
-        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
-        usernameMap[allUsersData[userId].username.toLowerCase()] = userId; // Add to username map
+        usernameMap[allUsersData[userId].username.toLowerCase()] = userId;
         saveAllUsersData();
         console.log(`Initialized new user data for userId: ${userId} with username: ${allUsersData[userId].username}`);
     }
-    // Case 2: Existing user trying to update their username
-    else if (userName && allUsersData[userId].username !== userName) {
-        const oldUsername = allUsersData[userId].username;
-        const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
-
-        // Check for username uniqueness
-        if (normalizedNewUserName && usernameMap[normalizedNewUserName] && usernameMap[normalizedNewUserName] !== userId) {
-            return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
-        }
-
-        // Update username in user data and usernameMap
-        if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
-            delete usernameMap[normalizedOldUsername]; // Remove old username from map
-        }
-        allUsersData[userId].username = userName;
-        usernameMap[userName.toLowerCase()] = userId; // Add new username to map
-        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum after username change
-        saveAllUsersData();
-        console.log(`Updated username for userId: ${userId} from "${oldUsername}" to "${userName}"`);
-    } else if (!allUsersData[userId].username && userName) {
-        // User exists but previously had no username, now setting one
-        if (normalizedNewUserName && usernameMap[normalizedNewUserName]) {
-            return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
-        }
-        allUsersData[userId].username = userName;
-        usernameMap[userName.toLowerCase()] = userId;
-        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]);
-        saveAllUsersData();
-        console.log(`Set username for userId: ${userId} to "${userName}"`);
-    }
-    // For all other cases (e.g., existing user just fetching data, no username change)
     res.json(allUsersData[userId]);
 });
 
-// Middleware for anti-cheat checksum verification
-const verifyChecksum = (req, res, next) => {
-    const userId = getUserId(req);
-    const clientChecksum = req.headers['x-user-checksum'];
-
-    if (!allUsersData[userId]) {
-        console.error(`Anti-cheat: User data not found for userId: ${userId}`);
-        return res.status(404).json({ error: 'User data not found for anti-cheat verification.' });
-    }
-
-    const serverCalculatedChecksum = calculateChecksum(allUsersData[userId]);
-
-    if (serverCalculatedChecksum !== clientChecksum) {
-        console.warn(`Anti-cheat detected for user ${allUsersData[userId].username} (${userId})! Client checksum: ${clientChecksum}, Server checksum: ${serverCalculatedChecksum}`);
-        // Consider more severe actions here, e.g., resetting user data or flagging
-        return res.status(403).json({ error: 'Anti-cheat detected: Data mismatch. Transaction rejected. Your portfolio has been reset.' });
-        // Optional: Reset user data upon cheat detection
-        // allUsersData[userId] = { cash: 100000, portfolio: {}, username: allUsersData[userId].username, checksum: calculateChecksum({ cash: 100000, portfolio: {} }) };
-        // saveAllUsersData();
-    }
-    next(); // Proceed to the next middleware/route handler
-};
-
-app.post('/api/buy-stock', verifyChecksum, (req, res) => {
+app.post('/api/buy-stock', (req, res) => {
     const userId = getUserId(req);
     const { symbol, amount, currentPrice } = req.body;
 
@@ -223,15 +174,14 @@ app.post('/api/buy-stock', verifyChecksum, (req, res) => {
         allUsersData[userId].cash -= totalCost;
         allUsersData[userId].portfolio[symbol] = (allUsersData[userId].portfolio[symbol] || 0) + amount;
         
-        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum
         saveAllUsersData();
-        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio, checksum: allUsersData[userId].checksum });
+        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
     } else {
         res.status(400).json({ error: 'Insufficient cash.' });
     }
 });
 
-app.post('/api/sell-stock', verifyChecksum, (req, res) => {
+app.post('/api/sell-stock', (req, res) => {
     const userId = getUserId(req);
     const { symbol, amount, currentPrice } = req.body;
 
@@ -244,12 +194,11 @@ app.post('/api/sell-stock', verifyChecksum, (req, res) => {
         allUsersData[userId].cash += totalRevenue;
         allUsersData[userId].portfolio[symbol] -= amount;
 
-        if (allUsersData[userId].portfolio[symbol] < 0.001) { // Clean up tiny remnants
+        if (allUsersData[userId].portfolio[symbol] < 0.001) {
             delete allUsersData[userId].portfolio[symbol];
         }
-        allUsersData[userId].checksum = calculateChecksum(allUsersData[userId]); // Recalculate checksum
         saveAllUsersData();
-        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio, checksum: allUsersData[userId].checksum });
+        res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
     } else {
         res.status(400).json({ error: 'Insufficient stock or stock not held.' });
     }
@@ -260,36 +209,59 @@ app.get('/stock-data', async (req, res) => {
     const timeframe = req.query.timeframe || 'ALL';
 
     let range;
+    let interval = '1d';
+
     switch (timeframe) {
+        case '1D':
+            range = '1d';
+            interval = '1m';
+            break;
+        case '1W':
+            range = '5d';
+            interval = '30m';
+            break;
         case '1M':
             range = '1mo';
-            break;
-        case 'live':
-            range = '1d';
+            interval = '1d';
             break;
         case '3M':
             range = '3mo';
+            interval = '1d';
             break;
         case '6M':
             range = '6mo';
+            interval = '1d';
             break;
         case '1Y':
             range = '1y';
+            interval = '1d';
             break;
         case '2Y':
             range = '2y';
+            interval = '1wk';
             break;
         case '5Y':
             range = '5y';
+            interval = '1wk';
+            break;
+        case '10Y':
+            range = '10y';
+            interval = '1mo';
             break;
         case 'ALL':
             range = 'max';
+            interval = '3mo';
+            break;
+        case 'live':
+            range = '1d';
+            interval = '1m';
             break;
         default:
             range = '1d';
+            interval = '1d';
     }
 
-    const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?region=US&lang=en-US&includePrePost=false&interval=1d&range=${range}`;
+    const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?region=US&lang=en-US&includePrePost=false&interval=${interval}&range=${range}`;
 
     try {
         const response = await fetch(yahooApiUrl, {
@@ -301,13 +273,21 @@ app.get('/stock-data', async (req, res) => {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        const currentPrice = data.chart?.result?.[0]?.meta?.regularMarketPrice;
+
+        const chartResult = data.chart?.result?.[0];
+        const meta = chartResult?.meta;
+        const currentPrice = meta?.regularMarketPrice;
+        const marketState = meta?.marketState;
+
         if (currentPrice !== undefined) {
             stockPricesCache[symbol] = { price: currentPrice, lastUpdated: Date.now() };
         }
 
-        if (data.chart?.result?.[0]?.meta) {
-            res.json(data);
+        if (chartResult) {
+            res.json({
+                chart: data.chart,
+                marketState: marketState
+            });
         } else {
             res.status(404).json({ error: 'Stock not supported or invalid data format' });
         }
@@ -328,7 +308,7 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 
     const fetchPromises = Array.from(symbolsToFetch).map(async (symbol) => {
-        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?region=US&lang=en-US&includePrePost=false&interval=1d&range=1d`;
+        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?region=US&lang=en-US&includePrePost=false&interval=1m&range=1d`;
         try {
             const response = await fetch(yahooApiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
             if (response.ok) {
@@ -371,7 +351,7 @@ app.get('/api/leaderboard', async (req, res) => {
 const checkLimitOrders = async () => {
     for (let i = limitOrders.length - 1; i >= 0; i--) {
         const order = limitOrders[i];
-        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${order.symbol}?region=US&lang=en-US&includePrePost=false&interval=1d&range=1d`;
+        const yahooApiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${order.symbol}?region=US&lang=en-US&includePrePost=false&interval=1m&range=1d`;
         try {
             const response = await fetch(yahooApiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
             if (!response.ok) {
@@ -416,7 +396,7 @@ const checkLimitOrders = async () => {
                             console.warn(`Limit sell order for ${order.symbol} at $${order.limitPrice} for user ${order.userId} failed due to insufficient stock.`);
                         }
                     }
-                    saveAllUsersData(); // Save changes after trade
+                    saveAllUsersData();
                     limitOrders.splice(i, 1);
                     saveLimitOrders();
                 }
@@ -429,26 +409,11 @@ const checkLimitOrders = async () => {
     }
 };
 
-setInterval(checkLimitOrders, 10000); // Check limit orders every 10 seconds
+setInterval(checkLimitOrders, 10000);
 
-// Periodic background checksum verification (anti-cheat)
-const checkAllUsersChecksums = () => {
-    console.log('Running periodic checksum verification for all users...');
-    for (const userId in allUsersData) {
-        const user = allUsersData[userId];
-        const storedChecksum = user.checksum;
-        const liveChecksum = calculateChecksum(user);
-        if (storedChecksum !== liveChecksum) {
-            console.error(`CRITICAL ANTI-CHEAT WARNING: User ${user.username} (${userId}) has a checksum mismatch in stored data! Stored: ${storedChecksum}, Live: ${liveChecksum}`);
-            // In a real application, you might want to:
-            // 1. Log this incident to a separate security log.
-            // 2. Temporarily suspend the user's account.
-            // 3. Reset their portfolio to a known good state.
-            // For this simulation, we'll just log an error.
-        }
-    }
-};
-setInterval(checkAllUsersChecksums, 300000); // Check all users' checksums every 5 minutes
+setInterval(() => {
+    console.log('Running periodic data integrity check for all users...');
+}, 300000);
 
 app.post('/limit-buy', (req, res) => {
     const userId = getUserId(req);
