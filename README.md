@@ -30,13 +30,13 @@ User Management:
 
 Set and change your username.
 
-Local storage for user ID and username persistence.
+Local storage for user ID and username.
 
-Anti-cheat mechanism for data integrity.
+Anti-cheat mechanism.
 
-Persnalized Settings:
+Personalized Settings:
 
-Toggle Dak Mode for a comfortable viewing experience.
+Toggle Dark Mode for a comfortable viewing experience.
 
 Placeholder for notifications (future functionality).
 
@@ -56,7 +56,7 @@ Setup and Installation
 This project primarily consists of a frontend web application. To run it locally, you will need a web browser.
 
 
-git clone https://github.com/your-username/stock-trading-app.git
+git clone https://github.com/Ronan615/stock-trading-app.git
 cd stock-trading-app
 
 Just have to run the backend.js files and use npm to install dependences 
