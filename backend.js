@@ -14,10 +14,12 @@ app.use(express.json());
 
 const ordersFile = 'limitOrders.json';
 const usersDataFile = 'usersData.json';
+const transactionsFile = 'transactions.json';
 
 let allUsersData = {};
 let usernameMap = {};
 let stockPricesCache = {};
+let transactions = [];
 
 const loadAllUsersData = () => {
     try {
@@ -71,8 +73,6 @@ const saveAllUsersData = () => {
     }
 };
 
-let limitOrders = [];
-
 const loadLimitOrders = () => {
     try {
         if (fs.existsSync(ordersFile)) {
@@ -90,11 +90,42 @@ const saveLimitOrders = () => {
     fs.writeFileSync(ordersFile, JSON.stringify(limitOrders, null, 2), 'utf8');
 };
 
+const loadTransactions = () => {
+    try {
+        if (fs.existsSync(transactionsFile)) {
+            const data = fs.readFileSync(transactionsFile, 'utf8');
+            return JSON.parse(data);
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        return [];
+    }
+};
+
+const saveTransactions = () => {
+    try {
+        fs.writeFileSync(transactionsFile, JSON.stringify(transactions, null, 2), 'utf8');
+        console.log('Transactions saved successfully.');
+    } catch (error) {
+        console.error('Error saving transactions:', error);
+    }
+};
+
+
 loadAllUsersData();
 limitOrders = loadLimitOrders();
+transactions = loadTransactions();
+
+const authenticateToken = (req, res, next) => {
+    req.user = { uid: req.headers['x-user-id'] };
+    next();
+};
+
+app.use(authenticateToken);
 
 const getUserId = (req) => {
-    return req.headers['x-user-id'];
+    return req.user?.uid;
 };
 
 const getUserName = (req) => {
@@ -117,9 +148,8 @@ app.get('/api/user-data', (req, res) => {
         userName = null;
     }
 
-
     if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
+        return res.status(400).json({ error: 'User ID missing.' });
     }
 
     const normalizedNewUserName = userName ? userName.toLowerCase() : null;
@@ -154,7 +184,7 @@ app.get('/api/user-data', (req, res) => {
             console.log(`Updated username for userId: ${userId} from "${oldUsername}" to "${userName}"`);
         }
     } else {
-        if (normalizedNewUserName && usernameMap[normalizedNewUserName]) {
+        if (normalizedNewUserName && normalizedNewUserName !== null && usernameMap[normalizedNewUserName]) {
             return res.status(409).json({ error: 'Username already taken. Please choose a different one.' });
         }
         allUsersData[userId] = {
@@ -173,19 +203,44 @@ app.post('/api/buy-stock', (req, res) => {
     const userId = getUserId(req);
     const { symbol, amount, currentPrice } = req.body;
 
+    if (!userId) {
+        return res.status(401).json({ error: 'Authentication required for this action.' });
+    }
     if (!symbol || typeof amount !== 'number' || amount <= 0 || typeof currentPrice !== 'number' || currentPrice <= 0) {
         return res.status(400).json({ error: 'Invalid input for buying stock.' });
     }
 
     const totalCost = amount * currentPrice;
 
-    if (allUsersData[userId].cash >= totalCost) {
+    if (allUsersData[userId] && allUsersData[userId].cash >= totalCost) {
         allUsersData[userId].cash -= totalCost;
         allUsersData[userId].portfolio[symbol] = (allUsersData[userId].portfolio[symbol] || 0) + amount;
         
         saveAllUsersData();
+        transactions.push({
+            userId,
+            type: 'buy',
+            symbol,
+            amount,
+            price: currentPrice,
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+        saveTransactions();
+
         res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
     } else {
+        transactions.push({
+            userId,
+            type: 'buy',
+            symbol,
+            amount,
+            price: currentPrice,
+            timestamp: new Date().toISOString(),
+            status: 'failed',
+            reason: 'Insufficient cash'
+        });
+        saveTransactions();
         res.status(400).json({ error: 'Insufficient cash.' });
     }
 });
@@ -194,11 +249,14 @@ app.post('/api/sell-stock', (req, res) => {
     const userId = getUserId(req);
     const { symbol, amount, currentPrice } = req.body;
 
+    if (!userId) {
+        return res.status(401).json({ error: 'Authentication required for this action.' });
+    }
     if (!symbol || typeof amount !== 'number' || amount <= 0 || typeof currentPrice !== 'number' || currentPrice <= 0) {
         return res.status(400).json({ error: 'Invalid input for selling stock.' });
     }
 
-    if (allUsersData[userId].portfolio[symbol] && allUsersData[userId].portfolio[symbol] >= amount) {
+    if (allUsersData[userId] && allUsersData[userId].portfolio[symbol] && allUsersData[userId].portfolio[symbol] >= amount) {
         const totalRevenue = amount * currentPrice;
         allUsersData[userId].cash += totalRevenue;
         allUsersData[userId].portfolio[symbol] -= amount;
@@ -207,19 +265,40 @@ app.post('/api/sell-stock', (req, res) => {
             delete allUsersData[userId].portfolio[symbol];
         }
         saveAllUsersData();
+        transactions.push({
+            userId,
+            type: 'sell',
+            symbol,
+            amount,
+            price: currentPrice,
+            timestamp: new Date().toISOString(),
+            status: 'success'
+        });
+        saveTransactions();
+
         res.json({ success: true, cash: allUsersData[userId].cash, portfolio: allUsersData[userId].portfolio });
     } else {
+        transactions.push({
+            userId,
+            type: 'sell',
+            symbol,
+            amount,
+            price: currentPrice,
+            timestamp: new Date().toISOString(),
+            status: 'failed',
+            reason: 'Insufficient stock or stock not held'
+        });
+        saveTransactions();
         res.status(400).json({ error: 'Insufficient stock or stock not held.' });
     }
 });
 
-// New endpoint to change username
-app.post('/api/change-username', (req, res) => {
+app.post('/change_username', (req, res) => {
     const userId = getUserId(req);
     const { newUsername } = req.body;
 
     if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
+        return res.status(401).json({ error: 'Authentication required for this action.' });
     }
     if (!newUsername || typeof newUsername !== 'string' || newUsername.trim() === '') {
         return res.status(400).json({ error: 'Invalid new username provided.' });
@@ -228,12 +307,14 @@ app.post('/api/change-username', (req, res) => {
     const trimmedNewUsername = newUsername.trim();
     const normalizedNewUsername = trimmedNewUsername.toLowerCase();
 
-    // Check if the new username is already taken by another user
+    if (normalizedNewUsername === 'null' || normalizedNewUsername === 'undefined') {
+        return res.status(400).json({ error: 'Username cannot be "null" or "undefined".' });
+    }
+
     if (usernameMap[normalizedNewUsername] && usernameMap[normalizedNewUsername] !== userId) {
         return res.status(409).json({ error: 'This username is already taken. Please choose a different one.' });
     }
 
-    // Check if the userId exists
     if (!allUsersData[userId]) {
         return res.status(404).json({ error: 'User not found.' });
     }
@@ -241,10 +322,8 @@ app.post('/api/change-username', (req, res) => {
     const oldUsername = allUsersData[userId].username;
     const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
 
-    // Update username in allUsersData
     allUsersData[userId].username = trimmedNewUsername;
 
-    // Update usernameMap
     if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
         delete usernameMap[normalizedOldUsername];
     }
@@ -253,6 +332,43 @@ app.post('/api/change-username', (req, res) => {
     saveAllUsersData();
     console.log(`User ${userId} changed username from "${oldUsername}" to "${trimmedNewUsername}"`);
     res.json({ success: true, message: `Username successfully changed to ${trimmedNewUsername}.` });
+});
+
+app.post('/api/reset-account', (req, res) => {
+    const userId = getUserId(req);
+    const { confirm } = req.body;
+
+    if (!userId) {
+        return res.status(401).json({ error: 'Authentication required for this action.' });
+    }
+    if (confirm !== true) {
+        return res.status(400).json({ error: 'Confirmation required to reset account. Set confirm to true.' });
+    }
+
+    if (!allUsersData[userId]) {
+        return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const oldUsername = allUsersData[userId].username;
+    const normalizedOldUsername = oldUsername ? oldUsername.toLowerCase() : null;
+
+    allUsersData[userId] = {
+        cash: 100000,
+        portfolio: {},
+        username: `User-${userId.substring(0, 4)}`
+    };
+
+    if (normalizedOldUsername && usernameMap[normalizedOldUsername] === userId) {
+        delete usernameMap[normalizedOldUsername];
+    }
+    usernameMap[allUsersData[userId].username.toLowerCase()] = userId;
+
+    limitOrders = limitOrders.filter(order => order.userId !== userId);
+    saveLimitOrders();
+
+    saveAllUsersData();
+    console.log(`User ${userId} account reset. Old username: "${oldUsername}", New username: "${allUsersData[userId].username}"`);
+    res.json({ success: true, message: 'Account has been reset to initial state.' });
 });
 
 
@@ -299,6 +415,14 @@ app.get('/stock-data', async (req, res) => {
         case '10Y':
             range = '10y';
             interval = '1mo';
+            break;
+        case 'YTD':
+            range = 'ytd';
+            interval = '1d';
+            break;
+        case 'MAX':
+            range = 'max';
+            interval = '3mo';
             break;
         case 'ALL':
             range = 'max';
@@ -432,8 +556,27 @@ const checkLimitOrders = async () => {
                             userCurrentData.cash -= totalCost;
                             userCurrentData.portfolio[order.symbol] = (userCurrentData.portfolio[order.symbol] || 0) + order.amount;
                             console.log(`Executed buy: ${order.amount} of ${order.symbol}. Remaining cash for ${order.userId}: ${userCurrentData.cash}`);
+                            transactions.push({
+                                userId: order.userId,
+                                type: 'buyLimit',
+                                symbol: order.symbol,
+                                amount: order.amount,
+                                price: currentPrice,
+                                timestamp: new Date().toISOString(),
+                                status: 'executed'
+                            });
                         } else {
                             console.warn(`Limit buy order for ${order.symbol} at $${order.limitPrice} for user ${order.userId} failed due to insufficient cash.`);
+                            transactions.push({
+                                userId: order.userId,
+                                type: 'buyLimit',
+                                symbol: order.symbol,
+                                amount: order.amount,
+                                price: currentPrice,
+                                timestamp: new Date().toISOString(),
+                                status: 'failed',
+                                reason: 'Insufficient cash on limit order execution'
+                            });
                         }
                     } else if (order.type === 'sell') {
                         if (userCurrentData.portfolio[order.symbol] && userCurrentData.portfolio[order.symbol] >= order.amount) {
@@ -444,11 +587,31 @@ const checkLimitOrders = async () => {
                                 delete userCurrentData.portfolio[order.symbol];
                             }
                             console.log(`Executed sell: ${order.amount} of ${order.symbol}. New cash for ${order.userId}: ${userCurrentData.cash}`);
+                            transactions.push({
+                                userId: order.userId,
+                                type: 'sellLimit',
+                                symbol: order.symbol,
+                                amount: order.amount,
+                                price: currentPrice,
+                                timestamp: new Date().toISOString(),
+                                status: 'executed'
+                            });
                         } else {
                             console.warn(`Limit sell order for ${order.symbol} at $${order.limitPrice} for user ${order.userId} failed due to insufficient stock.`);
+                            transactions.push({
+                                userId: order.userId,
+                                type: 'sellLimit',
+                                symbol: order.symbol,
+                                amount: order.amount,
+                                price: currentPrice,
+                                timestamp: new Date().toISOString(),
+                                status: 'failed',
+                                reason: 'Insufficient stock on limit order execution'
+                            });
                         }
                     }
                     saveAllUsersData();
+                    saveTransactions();
                     limitOrders.splice(i, 1);
                     saveLimitOrders();
                 }
@@ -470,7 +633,7 @@ setInterval(() => {
 app.post('/limit-buy', (req, res) => {
     const userId = getUserId(req);
     if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
+        return res.status(401).json({ error: 'Authentication required for this action.' });
     }
     const { symbol, limitPrice, amount } = req.body;
     if (!symbol || !limitPrice || typeof amount !== 'number' || amount <= 0) {
@@ -478,13 +641,23 @@ app.post('/limit-buy', (req, res) => {
     }
     limitOrders.push({ userId, type: 'buy', symbol, limitPrice, amount });
     saveLimitOrders();
+    transactions.push({
+        userId,
+        type: 'buyLimitOrderPlaced',
+        symbol,
+        amount,
+        limitPrice,
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+    });
+    saveTransactions();
     res.json({ success: true, message: `Limit buy order added for ${symbol} for ${amount} shares at $${limitPrice}` });
 });
 
 app.post('/limit-sell', (req, res) => {
     const userId = getUserId(req);
     if (!userId) {
-        return res.status(400).json({ error: 'User ID missing in headers.' });
+        return res.status(401).json({ error: 'Authentication required for this action.' });
     }
     const { symbol, limitPrice, amount } = req.body;
     if (!symbol || !limitPrice || typeof amount !== 'number' || amount <= 0) {
@@ -492,7 +665,17 @@ app.post('/limit-sell', (req, res) => {
     }
     limitOrders.push({ userId, type: 'sell', symbol, limitPrice, amount });
     saveLimitOrders();
-    res.json({ success: true, message: `    Limit sell order added for ${symbol} for ${amount} shares at $${limitPrice}` });
+    transactions.push({
+        userId,
+        type: 'sellLimitOrderPlaced',
+        symbol,
+        amount,
+        limitPrice,
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+    });
+    saveTransactions();
+    res.json({ success: true, message: `Limit sell order added for ${symbol} for ${amount} shares at $${limitPrice}` });
 });
 
 app.listen(port, () => {

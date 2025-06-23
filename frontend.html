@@ -30,6 +30,22 @@
             --red-gradient-end: rgba(214, 48, 49, 0);
         }
 
+        body.dark-mode {
+            --primary-green: #00e6a8;
+            --darker-green: #00c28d;
+            --primary-red: #ff5757;
+            --light-grey: #121212;
+            --medium-grey: #2a2a2a;
+            --dark-grey: #f0f0f0;
+            --text-color: #e0e0e0;
+            --border-color: #3a3a3a;
+            --white: #1e1e1e;
+            --gradient-start: rgba(0, 230, 168, 0.6);
+            --gradient-end: rgba(0, 230, 168, 0);
+            --red-gradient-start: rgba(255, 87, 87, 0.6);
+            --red-gradient-end: rgba(255, 87, 87, 0);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -44,7 +60,7 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        #homepage, #stockTradingPage, #leaderboardPage {
+        #homepage, #stockTradingPage, #leaderboardPage, #settings {
             display: none;
             flex-grow: 1;
             opacity: 0;
@@ -52,7 +68,7 @@
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
         }
 
-        #homepage.active, #stockTradingPage.active, #leaderboardPage.active {
+        #homepage.active, #stockTradingPage.active, #leaderboardPage.active, #settings.active {
             opacity: 1;
             transform: translateY(0);
         }
@@ -66,6 +82,7 @@
             box-shadow: var(--shadow-medium);
             flex-grow: 1;
             transition: all 0.3s ease-in-out;
+            color: var(--text-color);
         }
 
         .section-heading {
@@ -160,15 +177,20 @@
             position: relative;
             width: 100%;
             height: 400px;
-            margin-bottom: 30px;
             background-color: var(--white);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             box-shadow: var(--shadow-light);
             padding: 20px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+
+        .stock-detail-chart {
+            height: 350px;
+            margin-bottom: 0;
         }
 
         canvas {
@@ -176,9 +198,43 @@
             height: 100% !important;
             border-radius: 8px;
         }
+        
+        .chart-container canvas {
+            flex-grow: 1;
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            margin-bottom: 0;
+        }
+
+        .chart-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-light);
+            color: var(--text-color);
+            font-size: 0.9em;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            z-index: 10;
+            max-width: 80%;
+        }
+
+        body.dark-mode .chart-message {
+            background-color: rgba(30, 30, 30, 0.9);
+            color: var(--text-color);
+        }
+
 
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             padding: 12px 15px;
             font-size: 16px;
             margin: 10px 0;
@@ -188,10 +244,12 @@
             box-sizing: border-box;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             background-color: var(--white);
+            color: var(--text-color);
         }
 
         input[type="text"]:focus,
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        select:focus {
             border-color: var(--primary-green);
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.2);
@@ -256,65 +314,245 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
         }
 
-        .trading-actions {
+        .trading-page-content {
             display: flex;
+            gap: 30px;
             flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 3;
+            min-width: 300px;
+        }
+
+        .right-panel {
+            flex: 1.5;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
-            align-items: center;
-            margin-bottom: 30px;
-            padding: 20px 25px;
+        }
+
+        .trading-form-card {
             background-color: var(--white);
             border-radius: 12px;
-            box-shadow: var(--shadow-light);
+            padding: 20px;
+            box-shadow: var(--shadow-medium);
             border: 1px solid var(--border-color);
-        }
-
-        .trading-actions h2 {
-            width: 100%;
-            margin-bottom: 15px;
-            color: var(--dark-grey);
-            font-size: 1.8em;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed var(--medium-grey);
-        }
-
-        .trading-actions .input-group {
             display: flex;
-            gap: 10px;
-            flex-grow: 1;
-            align-items: center;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        .trading-actions .input-group input {
-            flex-grow: 1;
-            width: auto;
-            margin: 0;
+        .buy-sell-toggle {
+            display: flex;
+            background-color: var(--medium-grey);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
         }
 
-        .trading-actions button {
-            flex-shrink: 0;
-            max-width: 120px;
-            font-size: 15px;
-            padding: 10px 20px;
+        .buy-sell-toggle button {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            background-color: transparent;
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 0.95em;
+            border-radius: 0;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            min-width: unset;
         }
 
-        .trading-actions .buy-button {
+        .buy-sell-toggle button.active {
             background-color: var(--primary-green);
             color: var(--white);
         }
 
-        .trading-actions .buy-button:hover {
+        .buy-sell-toggle button:hover:not(.active) {
+            background-color: var(--border-color);
+            color: var(--dark-grey);
+        }
+
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .order-row, .order-info-row, .order-input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95em;
+            color: var(--text-color);
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .order-row:last-of-type, .order-info-row:last-of-type, .order-input-group:last-of-type {
+            border-bottom: none;
+        }
+
+        .order-type-selection, .buy-in-selection {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .order-type-bubble {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .order-type-info, .buy-in-info {
+            background-color: var(--medium-grey);
+            color: var(--dark-grey);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .order-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .order-input-group input {
+            flex-grow: 1;
+            text-align: right;
+            font-weight: 600;
+            min-width: unset;
+        }
+        
+        .order-input-group button {
+            padding: 6px 12px;
+            font-size: 0.9em;
+            min-width: unset;
+            background-color: var(--primary-green);
+            color: white;
+        }
+        .order-input-group button:hover {
             background-color: var(--darker-green);
         }
 
-        .trading-actions .sell-button {
-            background-color: var(--primary-red);
-            color: var(--white);
+        .estimated-cost-row {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--primary-green);
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: none;
         }
 
-        .trading-actions .sell-button:hover {
-            background-color: #cc4000;
+        .trade-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: 700;
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
+        .trade-button.primary {
+            background-color: var(--primary-green);
+            color: white;
+        }
+
+        .trade-button.primary:hover {
+            background-color: var(--darker-green);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 184, 148, 0.3);
+        }
+
+        .trade-button.secondary {
+            background-color: var(--medium-grey);
+            color: var(--dark-grey);
+            border: 1px solid var(--border-color);
+        }
+
+        .trade-button.secondary:hover {
+            background-color: var(--border-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .price-change-display .positive {
+            color: var(--primary-green);
+        }
+        .price-change-display .negative {
+            color: var(--primary-red);
+        }
+
+        .nav-buttons.time-frame-buttons {
+            background-color: transparent;
+            box-shadow: none;
+            border: none;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0 20px 20px;
+            margin-top: 0;
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            border-radius: 0;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .nav-buttons.time-frame-buttons button {
+            background-color: transparent;
+            color: var(--text-color);
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            box-shadow: none;
+            text-transform: none;
+            letter-spacing: 0;
+            min-width: unset;
+        }
+
+        .nav-buttons.time-frame-buttons button:hover {
+            background-color: var(--medium-grey);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-buttons.time-frame-buttons button.active {
+            background-color: var(--primary-green);
+            color: var(--white);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-buttons.time-frame-buttons button.active:hover {
+            background-color: var(--darker-green);
+        }
+
+        .shares-owned-display {
+            font-size: 0.95em;
+            color: var(--text-color);
+            text-align: right;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
 
         #error {
             color: var(--primary-red);
@@ -475,10 +713,110 @@
             background-color: var(--darker-green);
         }
 
+        .settings-option {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-option:last-child {
+            border-bottom: none;
+        }
+
+        .settings-option label {
+            font-size: 1.1em;
+            color: var(--text-color);
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .settings-option .input-group {
+            display: flex;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .settings-option .input-group input {
+            flex-grow: 1;
+            margin: 0;
+            min-width: 150px;
+        }
+
+        .settings-option button {
+            min-width: 120px;
+            padding: 10px 15px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--medium-grey);
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-green);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-green);
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .app-info p {
+            font-size: 0.95em;
+            color: var(--text-color);
+            margin: 5px 0;
+        }
+
         @media (max-width: 992px) {
             .container {
                 padding: 25px;
                 margin: 20px auto;
+            }
+            .trading-page-content {
+                flex-direction: column;
+                gap: 20px;
             }
             .trading-actions .input-group {
                 flex-direction: column;
@@ -518,20 +856,14 @@
                 padding: 15px;
             }
             input[type="text"],
-            input[type="number"] {
+            input[type="number"],
+            select {
                 width: 100%;
                 margin: 5px 0;
                 padding: 10px 12px;
             }
-            .trading-actions {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 15px;
+            .trading-form-card {
                 padding: 15px;
-            }
-            .trading-actions h2 {
-                font-size: 1.5em;
-                margin-bottom: 10px;
             }
             .stock-category-list {
                 justify-content: center;
@@ -543,6 +875,23 @@
             }
             #leaderboardPage th, #leaderboardPage td {
                 padding: 8px 10px;
+            }
+            .settings-option {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .settings-option label {
+                width: 100%;
+                text-align: left;
+            }
+            .settings-option .input-group {
+                width: 100%;
+                flex-direction: column;
+            }
+            .settings-option .input-group input,
+            .settings-option .input-group button {
+                width: 100%;
+                max-width: unset;
             }
         }
 
@@ -561,11 +910,12 @@
             .chart-container {
                 height: 250px;
             }
-            .trading-actions {
-                padding: 10px;
-            }
             .modal-content {
                 padding: 25px;
+            }
+            .buy-sell-toggle button {
+                padding: 8px 10px;
+                font-size: 0.9em;
             }
         }
     </style>
@@ -576,6 +926,7 @@
         <button id="homeNavBtn" onclick="showSection('homepage')">Home</button>
         <button id="tradeNavBtn" onclick="showSection('stockTradingPage')">Trade Stocks</button>
         <button id="leaderboardNavBtn" onclick="showSection('leaderboardPage')">Leaderboard</button>
+        <button id="settingsBtn" onclick="showSection('settings')">Settings</button>
     </div>
 
     <div id="homepage" class="container">
@@ -624,7 +975,7 @@
             <li><button onclick="loadStock('RIVN')">RIVN</button></li>
             <li><button onclick="loadStock('CHPT')">CHPT</button></li>
             <li><button onclick="loadStock('UBER')">UBER</button></li>
-            <li><button onclick="loadStock('LYFT')">LYFT</button></li>
+            <li><button onclick="loadStock('LYFT')">LYT</button></li>
         </ul>
 
         <h3 class="stock-category-heading">Exchange Traded Funds (ETFs)</h3>
@@ -674,8 +1025,13 @@
     </div>
 
     <div id="stockTradingPage" class="container">
-        <h1 class="section-heading">Stock Trading</h1>
-        
+        <h1 class="section-heading" style="border-bottom: none; margin-bottom: 5px;"><span id="stockLongName"></span></h1>
+        <h2 style="color: var(--dark-grey); font-weight: 500; font-size: 1.5em; margin-bottom: 20px;">(<span id="stockTickerDisplay"></span>) <span id="currentStockPriceDisplay">$0.00</span></h2>
+        <p class="price-change-display" style="font-size: 1.1em; font-weight: 600; margin-bottom: 20px;">
+            <span id="priceChangeAmount">+$0.00</span> (<span id="priceChangePercent">+0.00%</span>)
+        </p>
+        <p style="color: var(--text-color); font-size: 0.9em; margin-bottom: 25px;">24 Hour Market</p>
+
         <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center;">
             <input type="text" id="stockSymbol" placeholder="Enter stock symbol (e.g., AAPL)">
             <button onclick="searchStock()">Load Chart</button>
@@ -683,35 +1039,68 @@
         
         <p id="error"></p>
 
-        <div class="nav-buttons time-frame-buttons" style="margin-top: 0; margin-bottom: 25px; box-shadow: none; background-color: transparent;">
-            <button onclick="changeTimeframe('live')">Live</button>
-            <button onclick="changeTimeframe('1M')">1M</button>
-            <button onclick="changeTimeframe('3M')">3M</button>
-            <button onclick="changeTimeframe('6M')">6M</button>
-            <button onclick="changeTimeframe('1Y')">1Y</button>
-            <button onclick="changeTimeframe('2Y')">2Y</button>
-            <button onclick="changeTimeframe('5Y')">5Y</button>
-            <button onclick="changeTimeframe('ALL')">ALL</button>
-        </div>
-
-        <div class="chart-container">
-            <canvas id="stockChart"></canvas>
-        </div>
-
-        <div class="trading-actions">
-            <h2>Perform Trades</h2>
-            <div class="cash-display" style="width: 100%; justify-content: center; margin-bottom: 20px;">
-                <h4>Available Cash:</h4>
-                <h4 id="cashdisplay-trade">$0.00</h4>
+        <div class="trading-page-content">
+            <div class="left-panel">
+                <div class="chart-container stock-detail-chart">
+                    <canvas id="stockChart"></canvas>
+                    <div class="nav-buttons time-frame-buttons">
+                        <button onclick="changeTimeframe('live')">Live</button>
+                        <button onclick="changeTimeframe('1D')">1D</button>
+                        <button onclick="changeTimeframe('1W')">1W</button>
+                        <button onclick="changeTimeframe('1M')">1M</button>
+                        <button onclick="changeTimeframe('3M')">3M</button>
+                        <button onclick="changeTimeframe('YTD')">YTD</button>
+                        <button onclick="changeTimeframe('1Y')">1Y</button>
+                        <button onclick="changeTimeframe('5Y')">5Y</button>
+                        <button onclick="changeTimeframe('MAX')">MAX</button>
+                    </div>
+                </div>
             </div>
-            
-            <div class="input-group">
-                <input type="number" id="buyAmount" placeholder="Shares to Buy">
-                <button class="buy-button" onclick="buyStock()">Buy</button>
-            </div>
-            <div class="input-group">
-                <input type="number" id="sellAmount" placeholder="Shares to Sell">
-                <button class="sell-button" onclick="sellStock()">Sell</button>
+
+            <div class="right-panel">
+                <div class="trading-form-card">
+                    <div class="buy-sell-toggle">
+                        <button id="buyButtonToggle" class="active" onclick="toggleTradeType('buy')">Buy <span id="toggleStockSymbolBuy"></span></button>
+                        <button id="sellButtonToggle" onclick="toggleTradeType('sell')">Sell <span id="toggleStockSymbolSell"></span></button>
+                    </div>
+
+                    <div class="order-details">
+                        <div class="order-row">
+                            <span>Order type</span>
+                            <div class="order-type-selection">
+                                <span class="order-type-bubble active">Market</span>
+                                <span class="order-type-info" title="Market orders execute at the best available current price.">?</span>
+                            </div>
+                        </div>
+                        <div class="order-row">
+                            <span id="tradeDirectionLabel">Buy In</span>
+                            <div class="buy-in-selection">
+                                <select id="buyInType">
+                                    <option value="shares">Shares</option>
+                                    <option value="dollars" disabled>Dollars (Coming Soon)</option>
+                                </select>
+                                <span class="buy-in-info" title="Choose to buy by number of shares or total dollar amount.">?</span>
+                            </div>
+                        </div>
+                        <div id="sharesOwnedDisplay" class="shares-owned-display" style="display: none;">You own: 0 shares</div>
+                        <div class="order-input-group">
+                            <span>Shares</span>
+                            <input type="number" id="tradeAmount" placeholder="0" min="0" oninput="updateEstimatedCost()">
+                            <button id="buyAllBtn" onclick="buyAllShares()">Buy All</button>
+                            <button id="sellAllBtn" onclick="sellAllShares()" style="display: none;">Sell All</button>
+                        </div>
+                        <div class="order-info-row">
+                            <span>Market Price</span>
+                            <span id="marketPriceDisplay">$0.00</span>
+                        </div>
+                        <div class="order-info-row estimated-cost-row">
+                            <span>Estimated cost</span>
+                            <span id="estimatedCostDisplay">$0.00</span>
+                        </div>
+                    </div>
+
+                    <button id="tradeNowBtn" class="trade-button primary" onclick="executeTrade()">Trade now</button>
+                </div>
             </div>
         </div>
     </div>
@@ -731,9 +1120,49 @@
         </table>
     </div>
 
-    <script>
-        const API_BASE_URL = 'https://stockapi.ronanapis.us'; // Updated API Base URL
+    <div id="settings" class="container">
+        <h1 class="section-heading">Settings</h1>
+        
+        <div class="settings-option">
+            <label for="darkModeToggle">Dark Mode</label>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
 
+        <div class="settings-option">
+            <label for="usernameInputSettings">Change Username</label>
+            <div class="input-group">
+                <input type="text" id="usernameInputSettings" placeholder="New Username">
+                <button onclick="changeUsername()">Save</button>
+            </div>
+        </div>
+
+        <div class="settings-option">
+            <label for="notificationsToggle">Enable Notifications</label>
+            <label class="switch">
+                <input type="checkbox" id="notificationsToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+        <div class="settings-option">
+            <label>Reset Account</label>
+            <button class="sell-button" onclick="resetAccount()">Reset Data</button>
+        </div>
+
+        <div class="settings-option app-info">
+            <label>App Information</label>
+            <div>
+                <p>Version: 1.0.0</p>
+                <p>Developed by: Ronan615</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://stockapi.ronanapis.us';
         let stockSymbol = 'AAPL';
         let stockChart;
         let portfolioChart;
@@ -742,19 +1171,36 @@
         const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
         let cash = 0;
         let portfolio = {};
+        let currentStockPrice = 0;
+        let tradeType = 'buy';
         let userId = localStorage.getItem('stockAppUserId');
         let username = localStorage.getItem('stockAppUsername');
-        let userChecksum = ''; // Store the user's data checksum from the backend
+        let userChecksum = '';
 
-        // Function to calculate a simple client-side checksum for user's financial data
-        // This is primarily for detecting accidental corruption or simple tampering attempts before sending to backend.
-        // The backend performs the authoritative cryptographic checksum.
         function calculateClientChecksum(cashData, portfolioData) {
             const dataToHash = { cash: cashData, portfolio: portfolioData };
-            // Using a simple JSON stringify as a client-side "checksum" for simplicity.
-            // A real client-side checksum could use a more robust hashing algorithm if necessary,
-            // but the backend's checksum is the authoritative one.
             return JSON.stringify(dataToHash);
+        }
+
+        function showModal(message) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+
+            const messagePara = document.createElement('p');
+            messagePara.textContent = message;
+            const closeButton = document.createElement('button');
+            closeButton.textContent = 'OK';
+            closeButton.onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            modalContent.appendChild(messagePara);
+            modalContent.appendChild(closeButton);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
         }
 
         function showUsernamePrompt() {
@@ -768,57 +1214,60 @@
                 <input type="text" id="usernameInput" placeholder="Enter your username" required>
                 <button id="saveUsernameBtn">Save Username</button>
             `;
-
-            modalOverlay.appendChild(modalContent); // Append content TO the overlay
-            document.body.appendChild(modalOverlay); // Append the overlay TO the body to ensure it's on top and centered
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
 
             const usernameInput = document.getElementById('usernameInput');
             const saveUsernameBtn = document.getElementById('saveUsernameBtn');
 
             saveUsernameBtn.onclick = async () => {
                 const newUsername = usernameInput.value.trim();
-                if (newUsername) {
-                    // Temporarily set username for the fetch call
-                    username = newUsername;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/user-data`, {
-                            method: 'GET', // Using GET to fetch/update user data on initial load
-                            headers: {
-                                'X-User-Id': userId,
-                                'X-User-Name': username
-                            }
-                        });
+                const alphanumeric = /^[a-zA-Z0-9]+$/;
 
-                        if (response.status === 409) { // Username already taken
-                            const errorData = await response.json();
-                            showModal(errorData.error);
-                            // Clear input and let user try again
-                            usernameInput.value = '';
-                            usernameInput.focus();
-                            username = null; // Clear temporary username
-                        } else if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                        } else {
-                            // Successfully set username
-                            const data = await response.json();
-                            cash = data.cash;
-                            portfolio = data.portfolio;
-                            userChecksum = data.checksum; // Store checksum
-                            localStorage.setItem('stockAppUsername', username); // Persist username
-                            document.body.removeChild(modalOverlay); // Remove the overlay
-                            showSection('homepage'); // Show homepage after username is set and data fetched
+                if (!newUsername) {
+                    showModal('Username cannot be blank. Please enter a valid username.');
+                    usernameInput.focus();
+                    return;
+                }
+                if (!alphanumeric.test(newUsername)) {
+                    showModal('Username can only contain letters and numbers.');
+                    usernameInput.focus();
+                    return;
+                }
+
+                username = newUsername;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/user-data`, {
+                        method: 'GET',
+                        headers: {
+                            'X-User-Id': userId,
+                            'X-User-Name': username
                         }
-                    } catch (error) {
-                        console.error('Error setting username or fetching user data:', error);
-                        showModal('Error setting username: ' + error.message);
-                        username = null; // Clear temporary username on error
+                    });
+                    if (response.status === 409) {
+                        const errorData = await response.json();
+                        alert(errorData.error);
+                        usernameInput.value = '';
+                        usernameInput.focus();
+                        username = null;
+                    } else if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    } else {
+                        const data = await response.json();
+                        cash = data.cash;
+                        portfolio = data.portfolio;
+                        userChecksum = data.checksum;
+                        localStorage.setItem('stockAppUsername', username);
+                        document.body.removeChild(modalOverlay);
+                        showSection('homepage');
                     }
-                } else {
-                    showModal('Please enter a valid username.');
+                } catch (error) {
+                    console.error('Error setting username or fetching user data:', error);
+                    showModal('Error setting username: ' + error.message);
+                    username = null;
                 }
             };
-
             usernameInput.focus();
         }
 
@@ -827,14 +1276,13 @@
                 const response = await fetch(`${API_BASE_URL}/api/user-data`, {
                     headers: {
                         'X-User-Id': userId,
-                        'X-User-Name': username // Always send username
+                        'X-User-Name': username
                     }
                 });
                 if (!response.ok) {
-                    if (response.status === 409) { // Username taken (should not happen on normal fetch if already set)
+                    if (response.status === 409) {
                         const errorData = await response.json();
-                        showModal(errorData.error + ' Please choose another name or refresh.');
-                        // Potentially force username reset here if an existing username becomes invalid
+                        alert(errorData.error + ' Please choose another name or refresh.');
                         localStorage.removeItem('stockAppUsername');
                         username = null;
                         showUsernamePrompt();
@@ -845,19 +1293,29 @@
                 const data = await response.json();
                 cash = data.cash;
                 portfolio = data.portfolio;
-                userChecksum = data.checksum; // Store checksum received from server
-                if (data.username && data.username !== username) { // Update local storage if backend corrected username
+                userChecksum = data.checksum;
+                if (data.username && data.username !== username) {
                   username = data.username;
                   localStorage.setItem('stockAppUsername', username);
                 }
-                document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
-                document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+                updateCashDisplays();
                 updatePortfolioChart();
             }
             catch (error) {
                 console.error('Error fetching user data:', error);
                 showModal('Error fetching user data: ' + error.message);
             }
+        }
+
+        function updateCashDisplays() {
+            const homeCashDisplay = document.getElementById('cashdisplay-home');
+            if (homeCashDisplay) {
+                homeCashDisplay.textContent = `$${cash.toFixed(2)}`;
+            } else {
+                console.warn("Element with ID 'cashdisplay-home' not found.");
+            }
+
+
         }
 
         async function fetchLeaderboardData() {
@@ -884,8 +1342,7 @@
 
         function createStockChart() {
             const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-green');
-            const negativeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-red');
-
+            
             stockChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -895,6 +1352,7 @@
                         data: [],
                         borderColor: primaryColor,
                         borderWidth: 2,
+                        spanGaps: true, /* This ensures the line connects across null data points */
                         fill: {
                             target: 'origin',
                             above: (context) => {
@@ -1069,11 +1527,37 @@
                 const response = await fetch(apiUrl);
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
                 if (data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].timestamp) {
-                    updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
+                    const prices = data.chart.result[0].indicators.quote[0].close;
+                    currentStockPrice = prices[prices.length - 1];
+                    const previousClosePrice = prices[0];
+                    updateChart(data.chart.result[0].timestamp, prices);
+                    
+                    const changeAmount = currentStockPrice - previousClosePrice;
+                    const changePercent = (changeAmount / previousClosePrice) * 100;
+
+                    const priceChangeAmountElement = document.getElementById('priceChangeAmount');
+                    const priceChangePercentElement = document.getElementById('priceChangePercent');
+
+                    if (priceChangeAmountElement && priceChangePercentElement) {
+                        priceChangeAmountElement.textContent = `${changeAmount >= 0 ? '+' : ''}$${Math.abs(changeAmount).toFixed(2)}`;
+                        priceChangePercentElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+
+                        priceChangeAmountElement.classList.remove('positive', 'negative');
+                        priceChangePercentElement.classList.remove('positive', 'negative');
+
+                        if (changeAmount >= 0) {
+                            priceChangeAmountElement.classList.add('positive');
+                            priceChangePercentElement.classList.add('positive');
+                        } else {
+                            priceChangeAmountElement.classList.add('negative');
+                            priceChangePercentElement.classList.add('negative');
+                        }
+                    }
+
                     document.getElementById('error').textContent = '';
                     document.getElementById('error').style.display = 'none';
                 } else {
@@ -1082,8 +1566,14 @@
             } catch (error) {
                 document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
                 document.getElementById('error').style.display = 'block';
-                changeTimeframe(timeframe);
             }
+            updateTradingDisplays();
+            const stockTickerDisplay = document.getElementById('stockTickerDisplay');
+            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol;
+            const stockLongName = document.getElementById('stockLongName');
+            if (stockLongName) stockLongName.textContent = `${stockSymbol} Shares`; 
+            const currentStockPriceDisplay = document.getElementById('currentStockPriceDisplay');
+            if (currentStockPriceDisplay) currentStockPriceDisplay.textContent = `$${currentStockPrice.toFixed(2)}`;
         }
 
         async function fetchStockDatalive() {
@@ -1092,17 +1582,49 @@
                 const response = await fetch(apiUrl);
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                updateChart(data.chart.result[0].timestamp, data.chart.result[0].indicators.quote[0].close);
+                const prices = data.chart.result[0].indicators.quote[0].close;
+                currentStockPrice = prices[prices.length - 1];
+                const previousClosePrice = prices[0];
+                updateChart(data.chart.result[0].timestamp, prices);
+
+                const changeAmount = currentStockPrice - previousClosePrice;
+                const changePercent = (changeAmount / previousClosePrice) * 100;
+
+                const priceChangeAmountElement = document.getElementById('priceChangeAmount');
+                const priceChangePercentElement = document.getElementById('priceChangePercent');
+
+                if (priceChangeAmountElement && priceChangePercentElement) {
+                    priceChangeAmountElement.textContent = `${changeAmount >= 0 ? '+' : ''}$${Math.abs(changeAmount).toFixed(2)}`;
+                    priceChangePercentElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+
+                    priceChangeAmountElement.classList.remove('positive', 'negative');
+                    priceChangePercentElement.classList.remove('positive', 'negative');
+
+                    if (changeAmount >= 0) {
+                        priceChangeAmountElement.classList.add('positive');
+                        priceChangePercentElement.classList.add('positive');
+                    } else {
+                        priceChangeAmountElement.classList.add('negative');
+                        priceChangePercentElement.classList.add('negative');
+                    }
+                }
                 document.getElementById('error').textContent = '';
                 document.getElementById('error').style.display = 'none';
+
             } catch (error) {
                 document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
                 document.getElementById('error').style.display = 'block';
-                changeTimeframe(timeframe);
             }
+            updateTradingDisplays();
+            const stockTickerDisplay = document.getElementById('stockTickerDisplay');
+            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol;
+            const stockLongName = document.getElementById('stockLongName');
+            if (stockLongName) stockLongName.textContent = `${stockSymbol} Shares`;
+            const currentStockPriceDisplay = document.getElementById('currentStockPriceDisplay');
+            if (currentStockPriceDisplay) currentStockPriceDisplay.textContent = `$${currentStockPrice.toFixed(2)}`;
         }
 
         function updateChart(timestamps, prices) {
@@ -1122,8 +1644,12 @@
         }
 
         let liveinterval = 0;
-
         function changeTimeframe(newTimeframe) {
+            document.querySelectorAll('.time-frame-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
             if (newTimeframe === "live" && liveinterval === 0) {
                 timeframe = newTimeframe;
                 document.getElementById('error').textContent = '';
@@ -1148,103 +1674,137 @@
             createStockChart();
         }
 
-        async function buyStock() {
-            const amount = parseFloat(document.getElementById('buyAmount').value);
+        function updateEstimatedCost() {
+            const amount = parseFloat(document.getElementById('tradeAmount').value);
+            const estimatedCost = amount * currentStockPrice;
+            const estimatedCostDisplay = document.getElementById('estimatedCostDisplay');
+            if (estimatedCostDisplay) {
+                estimatedCostDisplay.textContent = `$${isNaN(estimatedCost) ? '0.00' : estimatedCost.toFixed(2)}`;
+            }
+        }
+
+        function buyAllShares() {
+            if (currentStockPrice > 0) {
+                const maxShares = Math.floor(cash / currentStockPrice);
+                document.getElementById('tradeAmount').value = maxShares;
+                updateEstimatedCost();
+            } else {
+                showModal('Cannot buy shares. Stock price is not available.');
+            }
+        }
+
+        function sellAllShares() {
+            const ownedShares = portfolio[stockSymbol] || 0;
+            document.getElementById('tradeAmount').value = ownedShares;
+            updateEstimatedCost();
+        }
+
+        function updateTradingDisplays() {
+            const marketPriceDisplay = document.getElementById('marketPriceDisplay');
+            if (marketPriceDisplay) {
+                marketPriceDisplay.textContent = `$${currentStockPrice.toFixed(2)}`;
+            }
+            updateEstimatedCost();
+            
+            const toggleStockSymbolBuy = document.getElementById('toggleStockSymbolBuy');
+            if (toggleStockSymbolBuy) toggleStockSymbolBuy.textContent = stockSymbol;
+            const toggleStockSymbolSell = document.getElementById('toggleStockSymbolSell');
+            if (toggleStockSymbolSell) toggleStockSymbolSell.textContent = stockSymbol;
+
+            const sharesOwnedDisplay = document.getElementById('sharesOwnedDisplay');
+            const ownedShares = portfolio[stockSymbol] || 0;
+            if (sharesOwnedDisplay) {
+                sharesOwnedDisplay.textContent = `You own: ${ownedShares} shares`;
+            }
+        }
+
+        function toggleTradeType(type) {
+            tradeType = type;
+            document.getElementById('buyButtonToggle').classList.remove('active');
+            document.getElementById('sellButtonToggle').classList.remove('active');
+            const buyAllBtn = document.getElementById('buyAllBtn');
+            const sellAllBtn = document.getElementById('sellAllBtn');
+            const sharesOwnedDisplay = document.getElementById('sharesOwnedDisplay');
+            const tradeDirectionLabel = document.getElementById('tradeDirectionLabel');
+
+
+            if (type === 'buy') {
+                document.getElementById('buyButtonToggle').classList.add('active');
+                if (buyAllBtn) buyAllBtn.style.display = 'inline-block';
+                if (sellAllBtn) sellAllBtn.style.display = 'none';
+                if (sharesOwnedDisplay) sharesOwnedDisplay.style.display = 'none';
+                if (tradeDirectionLabel) tradeDirectionLabel.textContent = 'Buy In';
+            } else {
+                document.getElementById('sellButtonToggle').classList.add('active');
+                if (buyAllBtn) buyAllBtn.style.display = 'none';
+                if (sellAllBtn) sellAllBtn.style.display = 'inline-block';
+                if (sharesOwnedDisplay) sharesOwnedDisplay.style.display = 'block';
+                if (tradeDirectionLabel) tradeDirectionLabel.textContent = 'Sell Out';
+                updateTradingDisplays();
+            }
+            document.getElementById('tradeAmount').value = '';
+            updateEstimatedCost();
+        }
+
+        async function executeTrade() {
+            const amount = parseFloat(document.getElementById('tradeAmount').value);
             if (isNaN(amount) || amount <= 0) {
                 showModal('Invalid amount. Please enter a positive number.');
                 return;
             }
 
-            const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-            if (!currentPrice) {
+            if (!currentStockPrice) {
                 showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
                 return;
             }
 
             try {
                 const currentClientChecksum = calculateClientChecksum(cash, portfolio);
+                let response;
+                let url;
+                let body;
 
-                const response = await fetch(`${API_BASE_URL}/api/buy-stock`, {
+                if (tradeType === 'buy') {
+                    url = `${API_BASE_URL}/api/buy-stock`;
+                    body = JSON.stringify({ symbol: stockSymbol, amount, currentPrice: currentStockPrice });
+                } else {
+                    url = `${API_BASE_URL}/api/sell-stock`;
+                    body = JSON.stringify({ symbol: stockSymbol, amount, currentPrice: currentStockPrice });
+                }
+
+                response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-User-Id': userId,
                         'X-User-Name': username,
-                        'X-User-Checksum': currentClientChecksum // Send client checksum
+                        'X-User-Checksum': currentClientChecksum
                     },
-                    body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
+                    body: body,
                 });
 
                 const result = await response.json();
                 if (response.ok) {
                     cash = result.cash;
                     portfolio = result.portfolio;
-                    userChecksum = result.checksum; // Update with new checksum from server
-                    document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
-                    document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+                    userChecksum = result.checksum;
+                    updateCashDisplays();
                     updatePortfolioChart();
-                    showModal(`Stock bought successfully. You now have: $${cash.toFixed(2)}`);
+                    document.getElementById('tradeAmount').value = '';
+                    updateEstimatedCost();
+                    showModal(`Trade successful. You now have: $${cash.toFixed(2)} cash.`);
                 } else {
-                    showModal('Purchase failed: ' + result.error);
+                    showModal('Trade failed: ' + result.error);
                     if (result.error.includes('Anti-cheat')) {
-                        // Force a refresh of user data from the server if anti-cheat detected
                         await fetchUserData();
                     }
                 }
             } catch (error) {
-                console.error('Error buying stock:', error);
+                console.error('Error performing trade:', error);
                 showModal('Error communicating with server: ' + error.message);
             }
         }
 
-        async function sellStock() {
-            const amount = parseFloat(document.getElementById('sellAmount').value);
-            if (isNaN(amount) || amount <= 0) {
-                showModal('Invalid amount. Please enter a positive number.');
-                return;
-            }
-
-            const currentPrice = stockChart.data.datasets[0].data[stockChart.data.datasets[0].data.length - 1];
-            if (!currentPrice) {
-                showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
-                return;
-            }
-
-            try {
-                const currentClientChecksum = calculateClientChecksum(cash, portfolio);
-
-                const response = await fetch(`${API_BASE_URL}/api/sell-stock`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-User-Id': userId,
-                        'X-User-Name': username,
-                        'X-User-Checksum': currentClientChecksum // Send client checksum
-                    },
-                    body: JSON.stringify({ symbol: stockSymbol, amount, currentPrice }),
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    cash = result.cash;
-                    portfolio = result.portfolio;
-                    userChecksum = result.checksum; // Update with new checksum from server
-                    document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
-                    document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
-                    updatePortfolioChart();
-                    showModal(`Stock sold successfully. You now have: $${cash.toFixed(2)}`);
-                } else {
-                    showModal('Sale failed: ' + result.error);
-                    if (result.error.includes('Anti-cheat')) {
-                        // Force a refresh of user data from the server if anti-cheat detected
-                        await fetchUserData();
-                    }
-                }
-            } catch (error) {
-                console.error('Error selling stock:', error);
-                showModal('Error communicating with server: ' + error.message);
-            }
-        }
 
         function updatePortfolioChart() {
             const labels = Object.keys(portfolio);
@@ -1256,12 +1816,16 @@
 
         function loadStock(stock) {
             stockSymbol = stock;
-            document.getElementById('stockSymbol').value = stock;
-            document.getElementById('cashdisplay-home').textContent = `$${cash.toFixed(2)}`;
-            document.getElementById('cashdisplay-trade').textContent = `$${cash.toFixed(2)}`;
+            const stockSymbolInput = document.getElementById('stockSymbol');
+            if (stockSymbolInput) stockSymbolInput.value = stock;
+
+            updateCashDisplays();
             showSection('stockTradingPage');
-            document.getElementById('error').textContent = '';
-            document.getElementById('error').style.display = 'none';
+            const errorElement = document.getElementById('error');
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+            }
             resetChart();
             fetchStockData();
         }
@@ -1274,7 +1838,6 @@
             document.querySelectorAll('.nav-buttons button').forEach(btn => {
                 btn.classList.remove('active');
             });
-
             document.getElementById(sectionId).classList.add('active');
             document.getElementById(sectionId).style.display = 'block';
 
@@ -1289,40 +1852,151 @@
                 fetchUserData();
                 if (!stockSymbol || stockChart.data.datasets[0].data.length === 0) {
                     stockSymbol = 'AAPL';
-                    document.getElementById('stockSymbol').value = stockSymbol;
+                    const stockSymbolInput = document.getElementById('stockSymbol');
+                    if (stockSymbolInput) stockSymbolInput.value = stockSymbol;
                     resetChart();
                     fetchStockData();
+                } else {
+                    updateTradingDisplays();
                 }
+                const defaultTimeframeButton = document.querySelector('.time-frame-buttons button[onclick="changeTimeframe(\'ALL\')"]');
+                if (defaultTimeframeButton) {
+                    defaultTimeframeButton.classList.add('active');
+                }
+                toggleTradeType('buy');
             } else if (sectionId === 'leaderboardPage') {
                 document.getElementById('leaderboardNavBtn').classList.add('active');
                 fetchLeaderboardData();
             }
+            else if (sectionId === 'settings') {
+                document.getElementById('settingsBtn').classList.add('active');
+                document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
+                document.getElementById('notificationsToggle').checked = (localStorage.getItem('notifications') === 'enabled');
+                document.getElementById('usernameInputSettings').value = username;
+            }
         }
 
         function searchStockmainpage() {
-            loadStock(document.getElementById("stockSearch").value.toUpperCase());
+            const stockSearchInput = document.getElementById("stockSearch");
+            if (stockSearchInput) {
+                loadStock(stockSearchInput.value.toUpperCase());
+            }
         }
 
-        function showModal(message) {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+            localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+            if (stockChart) {
+                stockChart.destroy();
+                createStockChart();
+                fetchStockData();
+            }
+            if (portfolioChart) {
+                portfolioChart.destroy();
+                createPortfolioChart();
+                updatePortfolioChart();
+            }
+        });
 
-            const modalContent = document.createElement('div');
-            modalContent.className = 'modal-content';
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+            document.addEventListener('DOMContentLoaded', () => {
+                const initialToggle = document.getElementById('darkModeToggle');
+                if (initialToggle) {
+                    initialToggle.checked = true;
+                }
+            });
+        }
 
-            const messagePara = document.createElement('p');
-            messagePara.textContent = message;
+        const notificationsToggle = document.getElementById('notificationsToggle');
+        notificationsToggle.addEventListener('change', () => {
+            localStorage.setItem('notifications', notificationsToggle.checked ? 'enabled' : 'disabled');
+            showModal(`Notifications ${notificationsToggle.checked ? 'enabled' : 'disabled'}. (Note: This is a placeholder for future functionality.)`);
+        });
+        if (localStorage.getItem('notifications') === 'enabled') {
+            notificationsToggle.checked = true;
+        }
 
-            const closeButton = document.createElement('button');
-            closeButton.textContent = 'OK';
-            closeButton.onclick = () => {
-                document.body.removeChild(modal);
-            };
+        async function changeUsername() {
+            const newUsernameInput = document.getElementById('usernameInputSettings');
+            const newUsername = newUsernameInput ? newUsernameInput.value.trim() : '';
+            const alphanumeric = /^[a-zA-Z0-9]+$/;
 
-            modalContent.appendChild(messagePara);
-            modalContent.appendChild(closeButton);
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
+            if (!newUsername) {
+                showModal('New username cannot be blank. Please enter a valid username.');
+                if (newUsernameInput) newUsernameInput.focus();
+                return;
+            }
+            if (!alphanumeric.test(newUsername)) {
+                showModal('New username can only contain letters and numbers.');
+                if (newUsernameInput) newUsernameInput.focus();
+                return;
+            }
+            if (newUsername === username) {
+                showModal('New username is the same as your current username.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/change_username`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId,
+                        'X-User-Name': newUsername
+                    },
+                    body: JSON.stringify({ userId: userId, newUsername: newUsername })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    username = newUsername;
+                    localStorage.setItem('stockAppUsername', newUsername);
+                    showModal('Username updated successfully!');
+                    await fetchUserData();
+                } else {
+                    showModal('Failed to update username: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error changing username:', error);
+                showModal('Error communicating with server to change username: ' + error.message);
+            }
+        }
+
+        async function resetAccount() {
+            const confirmReset = confirm("Are you sure you want to reset your account? This will clear all your cash, portfolio, and leaderboard data.");
+            if (confirmReset) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/reset-account`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-User-Id': userId,
+                            'X-User-Name': username
+                        },
+                        body: JSON.stringify({ confirm: true, userId: userId })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        showModal('Account successfully reset!');
+                        localStorage.removeItem('stockAppUserId');
+                        localStorage.removeItem('stockAppUsername');
+                        userId = null;
+                        username = null;
+                        cash = 0;
+                        portfolio = {};
+                        userChecksum = '';
+                        initializeApp();
+                    } else {
+                        showModal('Account reset failed: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Error resetting account:', error);
+                    showModal('Error communicating with server for reset: ' + error.message);
+                }
+            }
         }
 
         createStockChart();
@@ -1334,10 +2008,8 @@
                 localStorage.setItem('stockAppUserId', userId);
                 showUsernamePrompt();
             } else if (!username) {
-                // If user ID exists but no username, prompt for it
                 showUsernamePrompt();
             } else {
-                // If both ID and username exist, fetch data and show homepage
                 await fetchUserData();
                 showSection('homepage');
             }
