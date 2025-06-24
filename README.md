@@ -56,7 +56,7 @@ Setup and Installation
 This project primarily consists of a frontend web application. To run it locally, you will need a web browser.
 
 
-git clone https://github.com/Ronan615/stock-trading-app.git
+git clone https://github.com/ronan615/stock-sim.git
 cd stock-trading-app
 
 Just have to run the backend.js files and use npm to install dependences 
