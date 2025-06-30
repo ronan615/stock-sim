@@ -20,6 +20,7 @@ let allUsersData = {};
 let usernameMap = {};
 let stockPricesCache = {};
 let transactions = [];
+let limitOrders = []; // Initialize limitOrders here
 
 const loadAllUsersData = () => {
     try {
@@ -373,8 +374,14 @@ app.post('/api/reset-account', (req, res) => {
 
 
 app.get('/stock-data', async (req, res) => {
-    const symbol = req.query.symbol || 'AAPL';
+    
+    const symbol = req.query.symbol; 
     const timeframe = req.query.timeframe || 'ALL';
+
+   
+    if (!symbol) {
+        return res.status(400).json({ error: 'Stock symbol is required.' });
+    }
 
     let range;
     let interval = '1d';
@@ -446,7 +453,12 @@ app.get('/stock-data', async (req, res) => {
             },
         });
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Check for specific Yahoo Finance API error messages
+            const errorText = await response.text();
+            if (response.status === 404) {
+                return res.status(404).json({ error: `Stock symbol '${symbol}' not found or invalid.` });
+            }
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         const data = await response.json();
 
@@ -465,7 +477,8 @@ app.get('/stock-data', async (req, res) => {
                 marketState: marketState
             });
         } else {
-            res.status(404).json({ error: 'Stock not supported or invalid data format' });
+            // If chartResult is null/undefined, it means Yahoo Finance didn't return valid data for the symbol
+            res.status(404).json({ error: `Could not retrieve data for stock symbol '${symbol}'. It might be invalid or not supported.` });
         }
     } catch (error) {
         console.error('Error fetching stock data:', error);
