@@ -1043,6 +1043,10 @@
             <div class="left-panel">
                 <div class="chart-container stock-detail-chart">
                     <canvas id="stockChart"></canvas>
+                    
+                    <div id="noStockMessage" class="chart-message" style="display: none;">
+                        Please search for a stock symbol above to view its chart.
+                    </div>
                     <div class="nav-buttons time-frame-buttons">
                         <button onclick="changeTimeframe('live')">Live</button>
                         <button onclick="changeTimeframe('1D')">1D</button>
@@ -1163,7 +1167,7 @@
 
     <script>
         const API_BASE_URL = 'https://stockapi.ronanapis.us';
-        let stockSymbol = 'AAPL';
+        let stockSymbol = null;
         let stockChart;
         let portfolioChart;
         let timeframe = 'ALL';
@@ -1246,7 +1250,7 @@
                     });
                     if (response.status === 409) {
                         const errorData = await response.json();
-                        alert(errorData.error);
+                        showModal(errorData.error);
                         usernameInput.value = '';
                         usernameInput.focus();
                         username = null;
@@ -1282,7 +1286,7 @@
                 if (!response.ok) {
                     if (response.status === 409) {
                         const errorData = await response.json();
-                        alert(errorData.error + ' Please choose another name or refresh.');
+                        showModal(errorData.error + ' Please choose another name or refresh.');
                         localStorage.removeItem('stockAppUsername');
                         username = null;
                         showUsernamePrompt();
@@ -1314,8 +1318,6 @@
             } else {
                 console.warn("Element with ID 'cashdisplay-home' not found.");
             }
-
-
         }
 
         async function fetchLeaderboardData() {
@@ -1352,7 +1354,7 @@
                         data: [],
                         borderColor: primaryColor,
                         borderWidth: 2,
-                        spanGaps: true, /* This ensures the line connects across null data points */
+                        spanGaps: true,
                         fill: {
                             target: 'origin',
                             above: (context) => {
@@ -1522,6 +1524,9 @@
         }
 
         async function fetchStockData() {
+            document.getElementById('stockChart').style.display = 'block';
+            document.getElementById('noStockMessage').style.display = 'none';
+
             const apiUrl = `${API_BASE_URL}/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
             try {
                 const response = await fetch(apiUrl);
@@ -1566,17 +1571,22 @@
             } catch (error) {
                 document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
                 document.getElementById('error').style.display = 'block';
+                document.getElementById('stockChart').style.display = 'none';
+                document.getElementById('noStockMessage').style.display = 'block';
             }
             updateTradingDisplays();
             const stockTickerDisplay = document.getElementById('stockTickerDisplay');
-            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol;
+            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol || 'N/A';
             const stockLongName = document.getElementById('stockLongName');
-            if (stockLongName) stockLongName.textContent = `${stockSymbol} Shares`; 
+            if (stockLongName) stockLongName.textContent = stockSymbol ? `${stockSymbol} Shares` : 'No Stock Selected'; 
             const currentStockPriceDisplay = document.getElementById('currentStockPriceDisplay');
             if (currentStockPriceDisplay) currentStockPriceDisplay.textContent = `$${currentStockPrice.toFixed(2)}`;
         }
 
         async function fetchStockDatalive() {
+            document.getElementById('stockChart').style.display = 'block';
+            document.getElementById('noStockMessage').style.display = 'none';
+
             const apiUrl = `${API_BASE_URL}/stock-data?symbol=${stockSymbol}&timeframe=${timeframe}`;
             try {
                 const response = await fetch(apiUrl);
@@ -1617,12 +1627,14 @@
             } catch (error) {
                 document.getElementById('error').textContent = `Stock not supported or error fetching data: ${error.message}. Or the server is rebooting. Please come back in 30 seconds.`;
                 document.getElementById('error').style.display = 'block';
+                document.getElementById('stockChart').style.display = 'none';
+                document.getElementById('noStockMessage').style.display = 'block';
             }
             updateTradingDisplays();
             const stockTickerDisplay = document.getElementById('stockTickerDisplay');
-            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol;
+            if (stockTickerDisplay) stockTickerDisplay.textContent = stockSymbol || 'N/A';
             const stockLongName = document.getElementById('stockLongName');
-            if (stockLongName) stockLongName.textContent = `${stockSymbol} Shares`;
+            if (stockLongName) stockLongName.textContent = stockSymbol ? `${stockSymbol} Shares` : 'No Stock Selected';
             const currentStockPriceDisplay = document.getElementById('currentStockPriceDisplay');
             if (currentStockPriceDisplay) currentStockPriceDisplay.textContent = `$${currentStockPrice.toFixed(2)}`;
         }
@@ -1634,36 +1646,65 @@
         }
 
         function searchStock() {
-            stockSymbol = document.getElementById('stockSymbol').value.toUpperCase();
-            if (stockSymbol) {
+            const inputSymbol = document.getElementById('stockSymbol').value.trim().toUpperCase();
+            if (inputSymbol) {
+                stockSymbol = inputSymbol;
                 document.getElementById('error').textContent = '';
                 document.getElementById('error').style.display = 'none';
                 resetChart();
                 fetchStockData();
+            } else {
+                showModal('Please enter a stock symbol to search.');
+                if (stockChart) {
+                    stockChart.data.labels = [];
+                    stockChart.data.datasets[0].data = [];
+                    stockChart.update();
+                }
+                document.getElementById('stockChart').style.display = 'none';
+                document.getElementById('noStockMessage').style.display = 'block';
+                document.getElementById('stockTickerDisplay').textContent = 'N/A';
+                document.getElementById('stockLongName').textContent = 'No Stock Selected';
+                document.getElementById('currentStockPriceDisplay').textContent = '$0.00';
+                document.getElementById('priceChangeAmount').textContent = '+$0.00';
+                document.getElementById('priceChangePercent').textContent = '+0.00%';
+                document.getElementById('priceChangeAmount').classList.remove('positive', 'negative');
+                document.getElementById('priceChangePercent').classList.remove('positive', 'negative');
+                updateTradingDisplays();
             }
         }
 
         let liveinterval = 0;
+
         function changeTimeframe(newTimeframe) {
             document.querySelectorAll('.time-frame-buttons button').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
 
-            if (newTimeframe === "live" && liveinterval === 0) {
-                timeframe = newTimeframe;
-                document.getElementById('error').textContent = '';
-                document.getElementById('error').style.display = 'none';
-                resetChart();
-                liveinterval = setInterval(fetchStockDatalive, 1000);
-            } else if (newTimeframe !== "live") {
+            if (!stockSymbol) {
+                showModal('Please select a stock first to change its timeframe.');
+                return;
+            }
+
+            if (newTimeframe === "live") {
+                if (liveinterval === 0) {
+                    timeframe = newTimeframe;
+                    document.getElementById('error').textContent = '';
+                    document.getElementById('error').style.display = 'none';
+                    resetChart();
+                    fetchStockDatalive();
+                    liveinterval = setInterval(fetchStockDatalive, 1000);
+                }
+            } else {
+                if (liveinterval !== 0) {
+                    clearInterval(liveinterval);
+                    liveinterval = 0;
+                }
                 timeframe = newTimeframe;
                 document.getElementById('error').textContent = '';
                 document.getElementById('error').style.display = 'none';
                 resetChart();
                 fetchStockData();
-                clearInterval(liveinterval);
-                liveinterval = 0;
             }
         }
         
@@ -1679,7 +1720,7 @@
             const estimatedCost = amount * currentStockPrice;
             const estimatedCostDisplay = document.getElementById('estimatedCostDisplay');
             if (estimatedCostDisplay) {
-                estimatedCostDisplay.textContent = `$${isNaN(estimatedCost) ? '0.00' : estimatedCost.toFixed(2)}`;
+                estimatedCostDisplay.textContent = `$${isNaN(estimatedCost) || !isFinite(estimatedCost) ? '0.00' : estimatedCost.toFixed(2)}`;
             }
         }
 
@@ -1707,9 +1748,9 @@
             updateEstimatedCost();
             
             const toggleStockSymbolBuy = document.getElementById('toggleStockSymbolBuy');
-            if (toggleStockSymbolBuy) toggleStockSymbolBuy.textContent = stockSymbol;
+            if (toggleStockSymbolBuy) toggleStockSymbolBuy.textContent = stockSymbol || '';
             const toggleStockSymbolSell = document.getElementById('toggleStockSymbolSell');
-            if (toggleStockSymbolSell) toggleStockSymbolSell.textContent = stockSymbol;
+            if (toggleStockSymbolSell) toggleStockSymbolSell.textContent = stockSymbol || '';
 
             const sharesOwnedDisplay = document.getElementById('sharesOwnedDisplay');
             const ownedShares = portfolio[stockSymbol] || 0;
@@ -1747,13 +1788,18 @@
         }
 
         async function executeTrade() {
+            if (!stockSymbol) {
+                showModal('Please select a stock before attempting to trade.');
+                return;
+            }
+
             const amount = parseFloat(document.getElementById('tradeAmount').value);
             if (isNaN(amount) || amount <= 0) {
                 showModal('Invalid amount. Please enter a positive number.');
                 return;
             }
 
-            if (!currentStockPrice) {
+            if (!currentStockPrice || currentStockPrice <= 0) {
                 showModal('Unable to fetch current price. Please ensure a stock is loaded and data is available.');
                 return;
             }
@@ -1805,7 +1851,6 @@
             }
         }
 
-
         function updatePortfolioChart() {
             const labels = Object.keys(portfolio);
             const data = labels.map(symbol => portfolio[symbol]);
@@ -1838,8 +1883,14 @@
             document.querySelectorAll('.nav-buttons button').forEach(btn => {
                 btn.classList.remove('active');
             });
+
             document.getElementById(sectionId).classList.add('active');
             document.getElementById(sectionId).style.display = 'block';
+
+            const noStockMessage = document.getElementById('noStockMessage');
+            if (noStockMessage) {
+                noStockMessage.style.display = 'none';
+            }
 
             if (sectionId === 'homepage') {
                 document.getElementById('homeNavBtn').classList.add('active');
@@ -1850,18 +1901,41 @@
             } else if (sectionId === 'stockTradingPage') {
                 document.getElementById('tradeNavBtn').classList.add('active');
                 fetchUserData();
-                if (!stockSymbol || stockChart.data.datasets[0].data.length === 0) {
-                    stockSymbol = 'AAPL';
-                    const stockSymbolInput = document.getElementById('stockSymbol');
-                    if (stockSymbolInput) stockSymbolInput.value = stockSymbol;
+
+                const stockSymbolInput = document.getElementById('stockSymbol');
+                if (stockSymbolInput) {
+                    stockSymbolInput.value = stockSymbol || '';
+                }
+
+                if (stockSymbol) {
                     resetChart();
                     fetchStockData();
                 } else {
+                    if (stockChart) {
+                        stockChart.data.labels = [];
+                        stockChart.data.datasets[0].data = [];
+                        stockChart.update();
+                    }
+                    if (noStockMessage) {
+                        noStockMessage.style.display = 'block';
+                    }
+                    document.getElementById('stockTickerDisplay').textContent = 'N/A';
+                    document.getElementById('stockLongName').textContent = 'No Stock Selected';
+                    document.getElementById('currentStockPriceDisplay').textContent = '$0.00';
+                    document.getElementById('priceChangeAmount').textContent = '+$0.00';
+                    document.getElementById('priceChangePercent').textContent = '+0.00%';
+                    document.getElementById('priceChangeAmount').classList.remove('positive', 'negative');
+                    document.getElementById('priceChangePercent').classList.remove('positive', 'negative');
                     updateTradingDisplays();
                 }
-                const defaultTimeframeButton = document.querySelector('.time-frame-buttons button[onclick="changeTimeframe(\'ALL\')"]');
+                
+                document.querySelectorAll('.time-frame-buttons button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const defaultTimeframeButton = document.querySelector('.time-frame-buttons button[onclick*="changeTimeframe(\'ALL\')"]');
                 if (defaultTimeframeButton) {
                     defaultTimeframeButton.classList.add('active');
+                    timeframe = 'ALL';
                 }
                 toggleTradeType('buy');
             } else if (sectionId === 'leaderboardPage') {
@@ -1890,7 +1964,9 @@
             if (stockChart) {
                 stockChart.destroy();
                 createStockChart();
-                fetchStockData();
+                if (stockSymbol) {
+                    fetchStockData();
+                }
             }
             if (portfolioChart) {
                 portfolioChart.destroy();
@@ -1965,8 +2041,19 @@
         }
 
         async function resetAccount() {
-            const confirmReset = confirm("Are you sure you want to reset your account? This will clear all your cash, portfolio, and leaderboard data.");
-            if (confirmReset) {
+            const confirmationModal = document.createElement('div');
+            confirmationModal.className = 'modal-overlay';
+            confirmationModal.innerHTML = `
+                <div class="modal-content">
+                    <p>Are you sure you want to reset your account? This will clear all your cash, portfolio, and leaderboard data.</p>
+                    <button id="confirmResetBtn" style="margin-right: 10px;">Yes, Reset</button>
+                    <button id="cancelResetBtn" class="secondary">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(confirmationModal);
+
+            document.getElementById('confirmResetBtn').onclick = async () => {
+                document.body.removeChild(confirmationModal);
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/reset-account`, {
                         method: 'POST',
@@ -1996,7 +2083,11 @@
                     console.error('Error resetting account:', error);
                     showModal('Error communicating with server for reset: ' + error.message);
                 }
-            }
+            };
+
+            document.getElementById('cancelResetBtn').onclick = () => {
+                document.body.removeChild(confirmationModal);
+            };
         }
 
         createStockChart();
