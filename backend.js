@@ -5,6 +5,7 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { RegExpMatcher, englishDataset, englishRecommendedTransformers } = require('obscenity');
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -14,13 +15,25 @@ app.use(express.json());
 
 const ordersFile = 'limitOrders.json';
 const usersDataFile = 'usersData.json';
-const transactionsFile = 'transactions.json';
+const transactionsFile = 'transactionsFile.json';
 
 let allUsersData = {};
 let usernameMap = {};
 let stockPricesCache = {};
 let transactions = [];
-let limitOrders = []; // Initialize limitOrders here
+let limitOrders = [];
+
+const profanityMatcher = new RegExpMatcher({
+    ...englishDataset.build(),
+    ...englishRecommendedTransformers,
+});
+
+const isProfane = (username) => {
+    if (!username || typeof username !== 'string') {
+        return false;
+    }
+    return profanityMatcher.hasMatch(username);
+};
 
 const loadAllUsersData = () => {
     try {
@@ -81,7 +94,8 @@ const loadLimitOrders = () => {
             return JSON.parse(data);
         }
         return [];
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error loading limit orders:', error);
         return [];
     }
@@ -118,6 +132,20 @@ loadAllUsersData();
 limitOrders = loadLimitOrders();
 transactions = loadTransactions();
 
+console.log('Checking existing usernames for profanity...');
+for (const userId of Object.keys(allUsersData)) {
+    const user = allUsersData[userId];
+    if (user.username && isProfane(user.username)) {
+        console.warn(`WARNING: User '${user.username}' (ID: ${userId}) has a profane username. Deleting username.`);
+        if (user.username) {
+            delete usernameMap[user.username.toLowerCase()];
+        }
+        allUsersData[userId].username = null;
+        saveAllUsersData();
+    }
+}
+
+
 const authenticateToken = (req, res, next) => {
     req.user = { uid: req.headers['x-user-id'] };
     next();
@@ -151,6 +179,21 @@ app.get('/api/user-data', (req, res) => {
 
     if (!userId) {
         return res.status(400).json({ error: 'User ID missing.' });
+    }
+
+    if (userName && isProfane(userName)) {
+        if (allUsersData[userId]) {
+            const oldUsername = allUsersData[userId].username;
+            if (oldUsername) {
+                delete usernameMap[oldUsername.toLowerCase()];
+            }
+            allUsersData[userId].username = null;
+            saveAllUsersData();
+            console.log(`Cleared profane username for userId: ${userId}. Old username was: "${oldUsername}"`);
+        }
+        return res.status(400).json({
+            error: 'Username contains profane language. Please choose a different username.'
+        });
     }
 
     const normalizedNewUserName = userName ? userName.toLowerCase() : null;
@@ -312,6 +355,21 @@ app.post('/change_username', (req, res) => {
         return res.status(400).json({ error: 'Username cannot be "null" or "undefined".' });
     }
 
+    if (isProfane(trimmedNewUsername)) {
+        if (allUsersData[userId]) {
+            const oldUsername = allUsersData[userId].username;
+            if (oldUsername) {
+                delete usernameMap[oldUsername.toLowerCase()];
+            }
+            allUsersData[userId].username = null;
+            saveAllUsersData();
+            console.log(`Cleared profane username for userId: ${userId}. Old username was: "${oldUsername}"`);
+        }
+        return res.status(400).json({
+            error: 'New username contains profane language. Please choose a different username.'
+        });
+    }
+
     if (usernameMap[normalizedNewUsername] && usernameMap[normalizedNewUsername] !== userId) {
         return res.status(409).json({ error: 'This username is already taken. Please choose a different one.' });
     }
@@ -374,11 +432,9 @@ app.post('/api/reset-account', (req, res) => {
 
 
 app.get('/stock-data', async (req, res) => {
-    
     const symbol = req.query.symbol; 
     const timeframe = req.query.timeframe || 'ALL';
 
-   
     if (!symbol) {
         return res.status(400).json({ error: 'Stock symbol is required.' });
     }
@@ -453,7 +509,6 @@ app.get('/stock-data', async (req, res) => {
             },
         });
         if (!response.ok) {
-            // Check for specific Yahoo Finance API error messages
             const errorText = await response.text();
             if (response.status === 404) {
                 return res.status(404).json({ error: `Stock symbol '${symbol}' not found or invalid.` });
@@ -477,7 +532,6 @@ app.get('/stock-data', async (req, res) => {
                 marketState: marketState
             });
         } else {
-            // If chartResult is null/undefined, it means Yahoo Finance didn't return valid data for the symbol
             res.status(404).json({ error: `Could not retrieve data for stock symbol '${symbol}'. It might be invalid or not supported.` });
         }
     } catch (error) {
@@ -491,8 +545,10 @@ app.get('/api/leaderboard', async (req, res) => {
     const symbolsToFetch = new Set();
 
     for (const userId in allUsersData) {
-        for (const symbol in allUsersData[userId].portfolio) {
-            symbolsToFetch.add(symbol);
+        if (allUsersData[userId].username) {
+            for (const symbol in allUsersData[userId].portfolio) {
+                symbolsToFetch.add(symbol);
+            }
         }
     }
 
@@ -518,17 +574,19 @@ app.get('/api/leaderboard', async (req, res) => {
 
     for (const userId in allUsersData) {
         const user = allUsersData[userId];
-        let netWorth = user.cash;
-        for (const symbol in user.portfolio) {
-            const quantity = user.portfolio[symbol];
-            const cachedPrice = stockPricesCache[symbol]?.price;
-            if (cachedPrice !== undefined) {
-                netWorth += quantity * cachedPrice;
-            } else {
-                console.warn(`Price for ${symbol} not found in cache for user ${user.username} (${userId}). Using 0 for calculation.`);
+        if (user.username && !isProfane(user.username)) {
+            let netWorth = user.cash;
+            for (const symbol in user.portfolio) {
+                const quantity = user.portfolio[symbol];
+                const cachedPrice = stockPricesCache[symbol]?.price;
+                if (cachedPrice !== undefined) {
+                    netWorth += quantity * cachedPrice;
+                } else {
+                    console.warn(`Price for ${symbol} not found in cache for user ${user.username} (${userId}). Using 0 for calculation.`);
+                }
             }
+            leaderboard.push({ username: user.username, netWorth: netWorth });
         }
-        leaderboard.push({ username: user.username, netWorth: netWorth });
     }
 
     leaderboard.sort((a, b) => b.netWorth - a.netWorth);
