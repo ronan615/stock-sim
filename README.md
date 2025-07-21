@@ -1,4 +1,5 @@
 Investment Portfolio & Stock Trading Application
+This is a summer of making project.
 This is a dynamic web application that simulates a stock trading platform, allowing users to manage a virtual investment portfolio, track stock prices in real-time, execute trades, and view their performance on a global leaderboard.
 
 Features
@@ -36,9 +37,11 @@ Anti-cheat mechanism.
 
 Personalized Settings:
 
+Added a profile picture upload system.
+
 Toggle Dark Mode for a comfortable viewing experience.
 
-Placeholder for notifications (future functionality).
+Order notifications to alert you if the stock is at a certan price.
 
 Option to reset your account data.
 
